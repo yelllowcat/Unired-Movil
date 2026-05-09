@@ -1,0 +1,40 @@
+# ========================
+# Android / Gradle
+# ========================
+*.iml
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Build outputs
+frontend/build/
+frontend/app/build/
+frontend/.gradle/
+frontend/local.properties
+frontend/captures/
+
+# IDE
+frontend/.idea/
+.idea/
+
+# Signing
+*.jks
+*.keystore
+
+# ========================
+# Node.js / Backend
+# ========================
+node_modules/
+backend/node_modules/
+backend/.env
+backend/dist/
+
+# ========================
+# OS files
+# ========================
+.DS_Store
+Thumbs.db
+*.swp
+*~
