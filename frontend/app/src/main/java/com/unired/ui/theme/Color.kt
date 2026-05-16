@@ -10,8 +10,12 @@ val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
+val BlueA = Color(0xff21249A)
+
 //------------------------------------------------------//
 
 val UniRedPrimary = Color(0xFF40B6BA)
 
 val UniRedBackground = Color(0xFFF5F5F5)
+
+val PrimaryButtonColor = Color(0xFF40B6BA)

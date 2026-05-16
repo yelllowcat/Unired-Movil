@@ -34,9 +34,11 @@ fun NavGraph() {
         composable(Screen.Register.route) {
 
             RegisterScreen(
-
                 onRegisterSuccess = {
                     navController.navigate(Screen.Feed.route)
+                },
+                onNavigateToRegister = {
+                    navController.popBackStack()
                 }
             )
         }
