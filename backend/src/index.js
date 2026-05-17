@@ -1,12 +1,11 @@
-import express from 'express';
-import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import env from './config/env.js';
-
-import routes from './routes/indexRoutes.js';
-import ApiError from './utils/ApiError.js';
-import errorHandler from './middlewares/errorHandler.js';
+import express from "express";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+import env from "./config/env.js";
+import errorHandler from "./middlewares/errorHandler.js";
+import ApiError from "./utils/ApiError.js";
+import routes from "./routes/indexRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,12 +14,12 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
-app.use('/api', routes);
+app.use("/api", routes);
 
 app.use((req, res, next) => {
-  next(new Error(404, `Not Found - ${req.originalUrl}`));
+  next(new ApiError(404, `Not Found - ${req.originalUrl}`));
 });
 
 app.use(errorHandler);

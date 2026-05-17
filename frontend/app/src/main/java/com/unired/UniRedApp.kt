@@ -7,4 +7,6 @@ import com.unired.ui.navigation.NavGraph
 fun UniRedApp() {
 
     NavGraph()
+
+
 }
