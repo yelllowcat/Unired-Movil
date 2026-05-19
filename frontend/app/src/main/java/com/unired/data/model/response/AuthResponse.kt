@@ -1,4 +1,4 @@
-package com.unired.data.model
+package com.unired.data.model.response
 
 data class AuthResponse(
     val token: String,
