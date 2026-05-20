@@ -9,7 +9,7 @@ import com.unired.data.model.request.RespondFriendRequest
 import com.unired.data.model.request.SendFriendRequest
 
 class FriendRepository(
-    private val api: FriendApi = ApiClient.retrofit.create(FriendApi::class.java)
+        private val api: FriendApi = ApiClient.retrofit.create(FriendApi::class.java)
 ) {
     suspend fun getFriends(): List<UserPreview> {
         return safeApiCall { api.getFriends() }
@@ -35,14 +35,14 @@ class FriendRepository(
 
     private fun FriendRequestDto.toModel(): FriendRequest {
         return FriendRequest(
-            requestId = requestId,
-            senderId = senderId,
-            receiverId = receiverId,
-            status = status,
-            requestDate = requestDate,
-            responseDate = responseDate,
-            senderName = sender?.fullName,
-            senderPicture = sender?.profilePicture
+                requestId = requestId,
+                senderId = senderId,
+                receiverId = receiverId,
+                status = status,
+                requestDate = requestDate,
+                responseDate = responseDate,
+                senderName = sender?.fullName,
+                senderPicture = sender?.profilePicture
         )
     }
 }

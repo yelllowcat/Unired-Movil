@@ -22,7 +22,8 @@ suspend fun <T> safeApiCall(call: suspend () -> ApiResponse<T>): T {
         } catch (_: Exception) { null }
         throw Exception(message ?: "Error de red: ${e.code()}")
     } catch (e: IOException) {
-        throw Exception("Sin conexión a internet")
+        val stackTrace = e.stackTrace.take(3).joinToString("\n") { "${it.className.substringAfterLast(".")}.${it.methodName}:${it.lineNumber}" }
+        throw Exception("Sin conexión a internet: ${e.localizedMessage} (${e.javaClass.simpleName})\n$stackTrace")
     }
 }
 
@@ -39,6 +40,7 @@ suspend fun safeApiCallUnit(call: suspend () -> ApiResponse<Unit>) {
         } catch (_: Exception) { null }
         throw Exception(message ?: "Error de red: ${e.code()}")
     } catch (e: IOException) {
-        throw Exception("Sin conexión a internet")
+        val stackTrace = e.stackTrace.take(3).joinToString("\n") { "${it.className.substringAfterLast(".")}.${it.methodName}:${it.lineNumber}" }
+        throw Exception("Sin conexión a internet: ${e.localizedMessage} (${e.javaClass.simpleName})\n$stackTrace")
     }
 }

@@ -13,6 +13,7 @@ router.use('/users', userRoutes);
 router.use('/posts', postRoutes);
 router.use('/posts/:postId/comments', commentRoutes);
 router.use('/comments', commentRoutes);
+router.use('/comments/:commentId/replies', replyRoutes);
 router.use('/replies', replyRoutes);
 router.use('/friends', friendRoutes);
 

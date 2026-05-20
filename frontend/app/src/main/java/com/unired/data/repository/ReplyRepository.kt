@@ -5,9 +5,7 @@ import com.unired.data.api.ReplyApi
 import com.unired.data.model.Reply
 import com.unired.data.model.request.CreateReplyRequest
 
-class ReplyRepository(
-    private val api: ReplyApi = ApiClient.retrofit.create(ReplyApi::class.java)
-) {
+class ReplyRepository(private val api: ReplyApi = ApiClient.retrofit.create(ReplyApi::class.java)) {
     suspend fun getReplies(commentId: Int): List<Reply> {
         return safeApiCall { api.getReplies(commentId) }
     }

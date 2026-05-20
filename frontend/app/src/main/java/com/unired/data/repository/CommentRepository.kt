@@ -3,8 +3,8 @@ package com.unired.data.repository
 import com.unired.data.api.ApiClient
 import com.unired.data.api.CommentApi
 import com.unired.data.model.Comment
-import com.unired.data.model.response.LikeResult
 import com.unired.data.model.request.CreateCommentRequest
+import com.unired.data.model.response.LikeResult
 
 class CommentRepository(
         private val api: CommentApi = ApiClient.retrofit.create(CommentApi::class.java)

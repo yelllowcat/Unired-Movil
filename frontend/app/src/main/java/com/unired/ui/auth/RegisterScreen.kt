@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -64,6 +65,18 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(26.dp))
 
+                registerViewModel.errorMessage?.let { error ->
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+
                 // Nombre completo
                 OutlinedTextField(
                     value = registerViewModel.fullName,
@@ -71,6 +84,7 @@ fun RegisterScreen(
                     label = { Text("Nombre completo") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    enabled = !registerViewModel.isLoading,
                     shape = RoundedCornerShape(20.dp),
                     isError = registerViewModel.fullNameError != null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
@@ -95,6 +109,7 @@ fun RegisterScreen(
                     label = { Text("Correo electrónico") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    enabled = !registerViewModel.isLoading,
                     shape = RoundedCornerShape(20.dp),
                     isError = registerViewModel.emailError != null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
@@ -119,6 +134,7 @@ fun RegisterScreen(
                     label = { Text("Contraseña") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    enabled = !registerViewModel.isLoading,
                     shape = RoundedCornerShape(20.dp),
                     isError = registerViewModel.passwordError != null,
                     visualTransformation = PasswordVisualTransformation(),
@@ -144,6 +160,7 @@ fun RegisterScreen(
                     label = { Text("Confirmar contraseña") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    enabled = !registerViewModel.isLoading,
                     shape = RoundedCornerShape(20.dp),
                     isError = registerViewModel.confirmPasswordError != null,
                     visualTransformation = PasswordVisualTransformation(),
@@ -160,8 +177,6 @@ fun RegisterScreen(
                     )
                 }
 
-                //Spacer(modifier = Modifier.height(12.dp))
-
                 // Enlace a iniciar sesión
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -171,12 +186,13 @@ fun RegisterScreen(
                     Text(text = "¿Ya tienes cuenta? ")
                     TextButton(
                         onClick = onNavigateToRegister,
+                        enabled = !registerViewModel.isLoading,
                         contentPadding = PaddingValues(0.dp),
                         modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 0.dp)
                     ) {
                         Text(
                             text = "Inicia sesión",
-                            color = BlueA,
+                            color = if (registerViewModel.isLoading) Color.Gray else BlueA,
                             style = MaterialTheme.typography.bodyMedium,
                             textDecoration = TextDecoration.Underline
                         )
@@ -187,11 +203,20 @@ fun RegisterScreen(
 
                 Button(
                     onClick = { registerViewModel.register(onRegisterSuccess) },
+                    enabled = !registerViewModel.isLoading,
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryButtonColor),
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.height(45.dp)
                 ) {
-                    Text("Registrarme")
+                    if (registerViewModel.isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Registrarme")
+                    }
                 }
             }
         }
