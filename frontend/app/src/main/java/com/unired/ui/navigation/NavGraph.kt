@@ -49,5 +49,25 @@ fun NavGraph() {
 
             FeedScreen()
         }
+
+        composable(Screen.Friends.route) {
+            com.unired.ui.friends.FriendsScreen(
+                onNavigateToFeed = {
+                    navController.navigate(Screen.Feed.route) {
+                        popUpTo(Screen.Feed.route) { inclusive = false }
+                    }
+                },
+                onNavigateToProfile = { userId ->
+                    navController.navigate("profile/$userId")
+                },
+                onNavigateToCreatePost = {
+                    navController.navigate("create_post")
+                },
+                onNavigateToProfileSelf = {
+                    val currentUserId = SessionManager.getUserId()
+                    navController.navigate("profile/$currentUserId")
+                }
+            )
+        }
     }
 }

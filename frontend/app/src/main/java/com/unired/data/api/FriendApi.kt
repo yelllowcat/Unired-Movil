@@ -27,6 +27,12 @@ interface FriendApi {
     @GET("friends/requests/pending")
     suspend fun getPendingRequests(): ApiResponse<List<FriendRequestDto>>
 
+    @GET("friends/requests/sent")
+    suspend fun getSentRequests(): ApiResponse<List<FriendRequestDto>>
+
+    @DELETE("friends/request/{id}")
+    suspend fun cancelRequest(@Path("id") requestId: Int): ApiResponse<Unit>
+
     @DELETE("friends/{id}")
     suspend fun removeFriend(@Path("id") friendId: Int): ApiResponse<Unit>
 }
