@@ -11,7 +11,7 @@ android {
     defaultConfig {
         applicationId = "com.unired"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -59,9 +59,14 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-    //------------------------------------------------------------------------------------//
+    // Networking
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp.logging)
 
-    // Navegación oficial con Compose
-    implementation("androidx.navigation:navigation-compose:2.8.9")
+    // Image loading
+    implementation(libs.coil.compose)
 
+    // Serialization
+    implementation(libs.gson)
 }

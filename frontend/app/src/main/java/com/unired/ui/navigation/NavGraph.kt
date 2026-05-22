@@ -6,15 +6,17 @@ import androidx.navigation.compose.NavHost
 import com.unired.ui.auth.LoginScreen
 import com.unired.ui.auth.RegisterScreen
 import com.unired.ui.feed.FeedScreen
+import com.unired.util.SessionManager
 
 @Composable
 fun NavGraph() {
 
     val navController = rememberNavController()
+    val startDest = if (SessionManager.isLoggedIn()) Screen.Feed.route else Screen.Login.route
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route
+        startDestination = startDest
     ) {
 
         composable(Screen.Login.route) {

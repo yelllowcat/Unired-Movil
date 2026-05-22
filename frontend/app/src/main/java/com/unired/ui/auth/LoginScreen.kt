@@ -71,12 +71,25 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(26.dp))
 
+                loginViewModel.errorMessage?.let { error ->
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+
                 OutlinedTextField(
                     value = loginViewModel.email,
                     onValueChange = { loginViewModel.onEmailChange(it) },
                     label = { Text("Correo Electrónico") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    enabled = !loginViewModel.isLoading,
                     shape = RoundedCornerShape(20.dp),
                     isError = loginViewModel.emailError != null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
@@ -100,6 +113,7 @@ fun LoginScreen(
                     label = { Text("Contraseña") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    enabled = !loginViewModel.isLoading,
                     shape = RoundedCornerShape(20.dp),
                     isError = loginViewModel.passwordError != null,
                     visualTransformation = PasswordVisualTransformation(),
@@ -124,12 +138,13 @@ fun LoginScreen(
                     Text(text = "¿Eres un nuevo usuario? ")
                     TextButton(
                         onClick = onNavigateToRegister,
+                        enabled = !loginViewModel.isLoading,
                         contentPadding = PaddingValues(0.dp),
                         modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 0.dp)
                     ) {
                         Text(
                             text = "Regístrate",
-                            color = BlueA,
+                            color = if (loginViewModel.isLoading) Color.Gray else BlueA,
                             style = MaterialTheme.typography.bodyMedium,
                             textDecoration = TextDecoration.Underline
                         )
@@ -140,11 +155,20 @@ fun LoginScreen(
 
                 Button(
                     onClick = { loginViewModel.login(onLoginSuccess) },
+                    enabled = !loginViewModel.isLoading,
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryButtonColor),
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.height(45.dp)
                 ) {
-                    Text("Iniciar sesión")
+                    if (loginViewModel.isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Iniciar sesión")
+                    }
                 }
             }
         }
