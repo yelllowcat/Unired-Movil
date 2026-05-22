@@ -33,6 +33,15 @@ class FriendRepository(
         safeApiCallUnit { api.removeFriend(friendId) }
     }
 
+    suspend fun getSentRequests(): List<FriendRequest> {
+        val dtoList = safeApiCall { api.getSentRequests() }
+        return dtoList.map { it.toModel() }
+    }
+
+    suspend fun cancelRequest(requestId: Int) {
+        safeApiCallUnit { api.cancelRequest(requestId) }
+    }
+
     private fun FriendRequestDto.toModel(): FriendRequest {
         return FriendRequest(
                 requestId = requestId,

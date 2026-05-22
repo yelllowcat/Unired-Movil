@@ -55,6 +55,7 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
                 Image(
                     painter = painterResource(id = R.drawable.logo_unired),
                     contentDescription = "logo de app",

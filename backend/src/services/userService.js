@@ -109,6 +109,7 @@ const searchUsers = async (query, limit = 20) => {
       fullName: true,
       profilePicture: true,
       biography: true,
+      registrationDate: true,
     },
     take: limit,
   });
