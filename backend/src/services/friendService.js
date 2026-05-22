@@ -131,10 +131,51 @@ const removeFriend = async (userId, friendId) => {
   return { success: true };
 };
 
+const getSentRequests = async (userId) => {
+  const requests = await prisma.friendRequest.findMany({
+    where: { senderId: userId, status: "pending" },
+    include: {
+      receiver: {
+        select: { userId: true, fullName: true, profilePicture: true },
+      },
+    },
+    orderBy: { requestDate: "desc" },
+  });
+
+  return requests.map((r) => {
+    const { receiver, ...rest } = r;
+    return { ...rest, sender: receiver };
+  });
+};
+
+const cancelFriendRequest = async (requestId, userId) => {
+  const request = await prisma.friendRequest.findUnique({
+    where: { requestId },
+  });
+
+  if (!request) throw new ApiError(404, "Solicitud no encontrada");
+
+  if (request.senderId !== userId) {
+    throw new ApiError(403, "No tienes permiso para cancelar esta solicitud");
+  }
+
+  if (request.status !== "pending") {
+    throw new ApiError(400, "Solo se pueden cancelar solicitudes pendientes");
+  }
+
+  await prisma.friendRequest.delete({
+    where: { requestId },
+  });
+
+  return { success: true };
+};
+
 export default {
   sendFriendRequest,
   respondToRequest,
   getFriends,
   getPendingRequests,
   removeFriend,
+  getSentRequests,
+  cancelFriendRequest,
 };

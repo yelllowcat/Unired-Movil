@@ -67,7 +67,11 @@ fun NavGraph(
         }
 
         composable(Screen.Friends.route) {
-            FriendsScreen()
+            FriendsScreen(
+                onNavigateToProfile = { userId ->
+                    navController.navigate("profile/$userId")
+                }
+            )
         }
 
         composable(
@@ -78,6 +82,4 @@ fun NavGraph(
             ProfileScreen(userId = userId)
         }
     }
-
-
 }

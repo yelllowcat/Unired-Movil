@@ -12,6 +12,5 @@ sealed class Screen(val route: String) {
 
     object Friends : Screen("friends")
 
-    object Profile : Screen("profile/{UserId}")
-
+    object Profile : Screen("profile/{userId}")
 }

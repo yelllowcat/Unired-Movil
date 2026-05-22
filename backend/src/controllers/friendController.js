@@ -39,10 +39,25 @@ const removeFriend = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, message: 'Amigo eliminado' });
 });
 
+const getSentRequests = asyncHandler(async (req, res) => {
+  const requests = await friendService.getSentRequests(req.user.userId);
+  res.status(200).json({ success: true, data: requests });
+});
+
+const cancelFriendRequest = asyncHandler(async (req, res) => {
+  const requestId = parseInt(req.params.id, 10);
+  if (isNaN(requestId)) throw new ApiError(400, 'ID de solicitud inválido');
+
+  await friendService.cancelFriendRequest(requestId, req.user.userId);
+  res.status(200).json({ success: true, message: 'Solicitud cancelada' });
+});
+
 export default {
   sendRequest,
   respondToRequest,
   getFriends,
   getPendingRequests,
   removeFriend,
+  getSentRequests,
+  cancelFriendRequest,
 };
