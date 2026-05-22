@@ -8,4 +8,10 @@ sealed class Screen(val route: String) {
 
     object Feed : Screen("feed")
 
+    object CreatePost : Screen("create_post")
+
+    object Friends : Screen("friends")
+
+    object Profile : Screen("profile/{UserId}")
+
 }
