@@ -1,20 +1,30 @@
 package com.unired.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import androidx.navigation.compose.NavHost
+import androidx.navigation.navArgument
 import com.unired.ui.auth.LoginScreen
 import com.unired.ui.auth.RegisterScreen
 import com.unired.ui.feed.FeedScreen
+import com.unired.ui.post.CreatePostScreen
+import com.unired.ui.friends.FriendsScreen
+import com.unired.ui.profile.ProfileScreen
 
 @Composable
-fun NavGraph() {
+fun NavGraph(
 
-    val navController = rememberNavController()
+    navController: NavHostController,
+    modifier: Modifier = Modifier
+
+) {
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route
+        startDestination = Screen.Login.route,
+        modifier = modifier
     ) {
 
         composable(Screen.Login.route) {
@@ -26,7 +36,9 @@ fun NavGraph() {
                 },
 
                 onLoginSuccess = {
-                    navController.navigate(Screen.Feed.route)
+                    navController.navigate(Screen.Feed.route){
+                        popUpTo(Screen.Login.route){ inclusive = true}
+                    }
                 }
             )
         }
@@ -35,7 +47,9 @@ fun NavGraph() {
 
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.navigate(Screen.Feed.route)
+                    navController.navigate(Screen.Feed.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
                 },
                 onNavigateToRegister = {
                     navController.popBackStack()
@@ -47,5 +61,23 @@ fun NavGraph() {
 
             FeedScreen()
         }
+
+        composable(Screen.CreatePost.route) {
+            CreatePostScreen()
+        }
+
+        composable(Screen.Friends.route) {
+            FriendsScreen()
+        }
+
+        composable(
+            route = Screen.Profile.route,
+            arguments = listOf(navArgument("userId") { defaultValue = "me" })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: "me"
+            ProfileScreen(userId = userId)
+        }
     }
+
+
 }
