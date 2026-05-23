@@ -86,7 +86,16 @@ fun NavGraph(
         }
 
         composable(Screen.CreatePost.route) {
-            CreatePostScreen()
+            CreatePostScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onPostCreated = {
+                    navController.navigate(Screen.Feed.route) {
+                        popUpTo(Screen.Feed.route) { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable(Screen.Friends.route) {
