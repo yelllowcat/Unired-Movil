@@ -1,7 +1,7 @@
 import prisma from "../utils/prisma.js";
 import ApiError from "../utils/ApiError.js";
 
-const getUserProfile = async (userId) => {
+const getUserProfile = async (userId, currentUserId) => {
   const user = await prisma.user.findUnique({
     where: { userId, active: true },
     select: {
@@ -28,6 +28,61 @@ const getUserProfile = async (userId) => {
   const friendsCount = user._count.friendsAsUser1 + user._count.friendsAsUser2;
   delete user._count;
   user.friendsCount = friendsCount;
+
+  // Fetch posts count
+  const postsCount = await prisma.post.count({
+    where: { userId, active: true }
+  });
+  user.postsCount = postsCount;
+
+  // Fetch likes count
+  const posts = await prisma.post.findMany({
+    where: { userId, active: true },
+    select: {
+      _count: {
+        select: { likes: true }
+      }
+    }
+  });
+  const likesCount = posts.reduce((sum, p) => sum + p._count.likes, 0);
+  user.likesCount = likesCount;
+
+  // Determine friendship status
+  if (userId === currentUserId) {
+    user.friendshipStatus = "me";
+    user.friendRequestId = null;
+  } else {
+    const friendship = await prisma.friend.findFirst({
+      where: {
+        OR: [
+          { userId1: currentUserId, userId2: userId },
+          { userId1: userId, userId2: currentUserId }
+        ]
+      }
+    });
+
+    if (friendship) {
+      user.friendshipStatus = "friends";
+      user.friendRequestId = null;
+    } else {
+      const request = await prisma.friendRequest.findFirst({
+        where: {
+          OR: [
+            { senderId: currentUserId, receiverId: userId, status: "pending" },
+            { senderId: userId, receiverId: currentUserId, status: "pending" }
+          ]
+        }
+      });
+
+      if (request) {
+        user.friendshipStatus = request.senderId === currentUserId ? "request_sent" : "request_received";
+        user.friendRequestId = request.requestId;
+      } else {
+        user.friendshipStatus = "none";
+        user.friendRequestId = null;
+      }
+    }
+  }
 
   return user;
 };

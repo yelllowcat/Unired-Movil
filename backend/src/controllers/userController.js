@@ -6,7 +6,7 @@ const getProfile = asyncHandler(async (req, res) => {
   const userId = parseInt(req.params.id, 10);
   if (isNaN(userId)) throw new ApiError(400, 'ID de usuario inválido');
 
-  const user = await userService.getUserProfile(userId);
+  const user = await userService.getUserProfile(userId, req.user.userId);
   res.status(200).json({ success: true, data: user });
 });
 

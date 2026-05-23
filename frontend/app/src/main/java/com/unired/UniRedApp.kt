@@ -20,7 +20,12 @@ fun UniRedApp() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val hideBaraIn = listOf(Screen.Login.route, Screen.Register.route)
+    val hideBaraIn = listOf(
+        Screen.Login.route,
+        Screen.Register.route,
+        Screen.PostDetail.route,
+        Screen.EditProfile.route
+    )
     val showBottomBar = currentRoute !in hideBaraIn
 
     val bottomItems = listOf(

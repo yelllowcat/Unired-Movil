@@ -2,6 +2,7 @@ package com.unired.ui.post
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,12 +12,15 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -24,10 +28,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.unired.R
-import com.unired.ui.components.EmptyState
+import com.unired.data.api.ApiClient
+import com.unired.ui.components.AvatarImage
 import com.unired.ui.components.LoadingIndicator
-import com.unired.ui.feed.PostCard
+import com.unired.util.DateFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,6 +52,7 @@ fun PostDetailScreen(
 ) {
     val uiState = viewModel.uiState
     var commentText by remember { mutableStateOf("") }
+    val serverUrl = ApiClient.BASE_URL.substringBefore("/api/")
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Geometric Background
@@ -59,21 +66,23 @@ fun PostDetailScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
+                // Completely transparent topBar containing only a circular back arrow
                 TopAppBar(
-                    title = {
-                        Text(
-                            text = "Detalle de Publicación",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = Color.White
-                        )
-                    },
+                    title = {},
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier
+                                .padding(start = 8.dp, top = 8.dp)
+                                .size(40.dp)
+                                .shadow(2.dp, shape = CircleShape)
+                                .background(Color.White, shape = CircleShape)
+                        ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Regresar",
-                                tint = Color.White
+                                tint = Color.Black,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     },
@@ -189,31 +198,138 @@ fun PostDetailScreen(
                         val comments = uiState.comments
 
                         LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 16.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp)
+                            modifier = Modifier.fillMaxSize()
                         ) {
+                            // Flat, edge-to-edge Post Details section matching Figma
                             item {
-                                PostCard(
-                                    post = post,
-                                    onLikeClick = { viewModel.togglePostLike() },
-                                    onCommentClick = { /* Already on detail screen */ },
-                                    onProfileClick = onNavigateToProfile,
-                                    onPostClick = { /* No-op on detail screen */ }
-                                )
-                                
-                                Spacer(modifier = Modifier.height(16.dp))
-                                
-                                Text(
-                                    text = "Comentarios",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                                )
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color.White)
+                                ) {
+                                    // Post Header Row
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        AvatarImage(
+                                            imageUrl = post.authorPicture,
+                                            fullName = post.authorName,
+                                            modifier = Modifier
+                                                .size(45.dp)
+                                                .clip(CircleShape)
+                                                .clickable { onNavigateToProfile(post.userId) }
+                                        )
+
+                                        Spacer(modifier = Modifier.width(12.dp))
+
+                                        Column(
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(
+                                                text = post.authorName,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 15.sp,
+                                                color = Color.Black
+                                            )
+                                            Text(
+                                                text = "Publicado el: " + DateFormatter.formatDateString(post.createdAt),
+                                                fontSize = 12.sp,
+                                                color = Color.Gray
+                                            )
+                                        }
+
+                                        IconButton(onClick = {}) {
+                                            Icon(
+                                                imageVector = Icons.Default.Menu,
+                                                contentDescription = "Opciones",
+                                                tint = Color.Black
+                                            )
+                                        }
+                                    }
+
+                                    // Flat full-width post image
+                                    post.image?.let { imgUrl ->
+                                        val fullUrl = if (imgUrl.startsWith("http")) imgUrl else "$serverUrl$imgUrl"
+                                        AsyncImage(
+                                            model = fullUrl,
+                                            contentDescription = "Imagen de publicación",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .heightIn(max = 300.dp),
+                                            contentScale = ContentScale.FillWidth
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                    }
+
+                                    // Content text below image
+                                    Text(
+                                        text = post.content,
+                                        fontSize = 14.sp,
+                                        color = Color.DarkGray,
+                                        lineHeight = 20.sp,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    // Action Bar separated by thin horizontal borders
+                                    HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
+                                    
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(48.dp)
+                                            .padding(horizontal = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.clickable { viewModel.togglePostLike() }
+                                        ) {
+                                            Image(
+                                                painter = painterResource(id = if (post.hasLiked) R.drawable.ic_heart_like else R.drawable.ic_heart),
+                                                contentDescription = "Me gusta",
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = post.likesCount.toString(),
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = Color.DarkGray
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.width(32.dp))
+
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Image(
+                                                painter = painterResource(id = R.drawable.ic_coment),
+                                                contentDescription = "Comentarios",
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = post.commentsCount.toString(),
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = Color.DarkGray
+                                            )
+                                        }
+                                    }
+                                    
+                                    HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
                             }
 
+                            // Comments lazy list
                             if (comments.isEmpty()) {
                                 item {
                                     Box(
@@ -243,9 +359,14 @@ fun PostDetailScreen(
                                         onReplyClick = {
                                             commentText = "@${comment.fullName} "
                                         },
-                                        modifier = Modifier.padding(vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                                     )
                                 }
+                            }
+                            
+                            // Bottom padding to avoid input overlap
+                            item {
+                                Spacer(modifier = Modifier.height(64.dp))
                             }
                         }
                     }

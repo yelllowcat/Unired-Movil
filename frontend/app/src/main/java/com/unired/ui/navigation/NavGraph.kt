@@ -14,6 +14,7 @@ import com.unired.ui.post.CreatePostScreen
 import com.unired.ui.post.PostDetailScreen
 import com.unired.ui.friends.FriendsScreen
 import com.unired.ui.profile.ProfileScreen
+import com.unired.ui.profile.EditProfileScreen
 
 @Composable
 fun NavGraph(
@@ -111,7 +112,39 @@ fun NavGraph(
             arguments = listOf(navArgument("userId") { defaultValue = "me" })
         ) { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId") ?: "me"
-            ProfileScreen(userId = userId)
+            ProfileScreen(
+                userId = userId,
+                onNavigateToPostDetail = { postId ->
+                    navController.navigate("post_detail/$postId")
+                },
+                onNavigateToProfile = { otherUserId ->
+                    navController.navigate("profile/$otherUserId")
+                },
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onEditProfileClick = {
+                    navController.navigate(Screen.EditProfile.route)
+                }
+            )
+        }
+
+        composable(Screen.EditProfile.route) {
+            EditProfileScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onProfileUpdated = {
+                    navController.popBackStack()
+                },
+                onAccountDeleted = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }
