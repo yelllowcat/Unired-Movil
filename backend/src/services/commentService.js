@@ -1,7 +1,7 @@
 import prisma from "../utils/prisma.js";
 import ApiError from "../utils/ApiError.js";
 
-const getCommentsByPost = async (postId) => {
+const getCommentsByPost = async (postId, currentUserId) => {
   const comments = await prisma.comment.findMany({
     where: { postId, active: true },
     include: {
@@ -11,6 +11,10 @@ const getCommentsByPost = async (postId) => {
           fullName: true,
           profilePicture: true,
         },
+      },
+      likes: {
+        where: { userId: currentUserId },
+        select: { likeId: true },
       },
       _count: {
         select: {
@@ -32,6 +36,7 @@ const getCommentsByPost = async (postId) => {
     profilePicture: comment.user.profilePicture,
     likesCount: comment._count.likes,
     repliesCount: comment._count.replies,
+    hasLiked: comment.likes ? comment.likes.length > 0 : false,
   }));
 };
 
@@ -47,9 +52,29 @@ const createComment = async (postId, userId, content) => {
       userId,
       content,
     },
+    include: {
+      user: {
+        select: {
+          userId: true,
+          fullName: true,
+          profilePicture: true,
+        },
+      },
+    },
   });
 
-  return comment;
+  return {
+    commentId: comment.commentId,
+    postId: comment.postId,
+    userId: comment.userId,
+    content: comment.content,
+    createdAt: comment.createdAt,
+    fullName: comment.user.fullName,
+    profilePicture: comment.user.profilePicture,
+    likesCount: 0,
+    repliesCount: 0,
+    hasLiked: false,
+  };
 };
 
 const deleteComment = async (commentId, userId) => {

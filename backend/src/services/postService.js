@@ -1,7 +1,7 @@
 import prisma from "../utils/prisma.js";
 import ApiError from "../utils/ApiError.js";
 
-const getFeed = async (page = 1, limit = 20) => {
+const getFeed = async (currentUserId, page = 1, limit = 20) => {
   const skip = (page - 1) * limit;
 
   const posts = await prisma.post.findMany({
@@ -14,6 +14,9 @@ const getFeed = async (page = 1, limit = 20) => {
           profilePicture: true,
           email: true,
         },
+      },
+      likes: {
+        where: { userId: currentUserId }
       },
       _count: {
         select: {
@@ -39,10 +42,11 @@ const getFeed = async (page = 1, limit = 20) => {
     authorEmail: post.user.email,
     likesCount: post._count.likes,
     commentsCount: post._count.comments,
+    hasLiked: post.likes.length > 0,
   }));
 };
 
-const getPostById = async (postId) => {
+const getPostById = async (postId, currentUserId) => {
   const post = await prisma.post.findUnique({
     where: { postId, active: true },
     include: {
@@ -53,6 +57,9 @@ const getPostById = async (postId) => {
           profilePicture: true,
           email: true,
         },
+      },
+      likes: {
+        where: { userId: currentUserId }
       },
       _count: {
         select: {
@@ -79,6 +86,7 @@ const getPostById = async (postId) => {
     authorEmail: post.user.email,
     likesCount: post._count.likes,
     commentsCount: post._count.comments,
+    hasLiked: post.likes.length > 0,
   };
 };
 

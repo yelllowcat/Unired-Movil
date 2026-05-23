@@ -11,6 +11,7 @@ import com.unired.ui.auth.RegisterScreen
 import com.unired.ui.feed.FeedScreen
 import com.unired.util.SessionManager
 import com.unired.ui.post.CreatePostScreen
+import com.unired.ui.post.PostDetailScreen
 import com.unired.ui.friends.FriendsScreen
 import com.unired.ui.profile.ProfileScreen
 
@@ -58,8 +59,30 @@ fun NavGraph(
         }
 
         composable(Screen.Feed.route) {
+            FeedScreen(
+                onNavigateToPostDetail = { postId ->
+                    navController.navigate("post_detail/$postId")
+                },
+                onNavigateToProfile = { userId ->
+                    navController.navigate("profile/$userId")
+                }
+            )
+        }
 
-            FeedScreen()
+        composable(
+            route = Screen.PostDetail.route,
+            arguments = listOf(navArgument("postId") { type = androidx.navigation.NavType.IntType })
+        ) { backStackEntry ->
+            val postId = backStackEntry.arguments?.getInt("postId") ?: 0
+            PostDetailScreen(
+                postId = postId,
+                onNavigateToProfile = { userId ->
+                    navController.navigate("profile/$userId")
+                },
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
         }
 
         composable(Screen.CreatePost.route) {

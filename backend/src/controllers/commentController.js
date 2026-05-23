@@ -6,7 +6,7 @@ const getComments = asyncHandler(async (req, res) => {
   const postId = parseInt(req.params.postId, 10);
   if (isNaN(postId)) throw new ApiError(400, 'ID de publicación inválido');
 
-  const comments = await commentService.getCommentsByPost(postId);
+  const comments = await commentService.getCommentsByPost(postId, req.user.userId);
   res.status(200).json({ success: true, data: comments });
 });
 
