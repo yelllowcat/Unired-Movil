@@ -42,7 +42,7 @@ const getPosts = asyncHandler(async (req, res) => {
 
 const search = asyncHandler(async (req, res) => {
   const query = req.query.q;
-  const users = await userService.searchUsers(query);
+  const users = await userService.searchUsers(query, req.user.userId);
   res.status(200).json({ success: true, data: users });
 });
 

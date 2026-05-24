@@ -170,7 +170,11 @@ fun FriendsScreen(
                                 SearchResultsList(
                                     users = viewModel.searchResults,
                                     onNavigateToProfile = onNavigateToProfile,
-                                    onSendRequest = { viewModel.sendRequest(it) }
+                                    onSendRequest = { viewModel.sendRequest(it) },
+                                    onAcceptRequest = { viewModel.acceptRequest(it) },
+                                    onRejectRequest = { viewModel.rejectRequest(it) },
+                                    onCancelRequest = { viewModel.cancelRequest(it) },
+                                    onRemoveFriend = { viewModel.removeFriend(it) }
                                 )
                             }
                             FriendsTab.PENDIENTES -> {
@@ -277,7 +281,11 @@ fun RequestsList(
 fun SearchResultsList(
     users: List<UserPreview>,
     onNavigateToProfile: (userId: Int) -> Unit,
-    onSendRequest: (userId: Int) -> Unit
+    onSendRequest: (userId: Int) -> Unit,
+    onAcceptRequest: (requestId: Int) -> Unit,
+    onRejectRequest: (requestId: Int) -> Unit,
+    onCancelRequest: (requestId: Int) -> Unit,
+    onRemoveFriend: (userId: Int) -> Unit
 ) {
     if (users.isEmpty()) {
         Box(
@@ -308,27 +316,116 @@ fun SearchResultsList(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Button(
-                                onClick = { onNavigateToProfile(user.userId) },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier
-                                    .height(36.dp)
-                                    .weight(1f),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("Ver perfil", color = Color.White, fontSize = 12.sp)
-                            }
-                            Button(
-                                onClick = { onSendRequest(user.userId) },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0F2F1)),
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier
-                                    .height(36.dp)
-                                    .weight(1f),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("Agregar", color = Color(0xFF00796B), fontSize = 12.sp)
+                            when (user.friendshipStatus) {
+                                "me" -> {
+                                    Button(
+                                        onClick = { onNavigateToProfile(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .fillMaxWidth(),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Ver mi perfil", color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+                                "friends" -> {
+                                    Button(
+                                        onClick = { onNavigateToProfile(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Ver perfil", color = Color.White, fontSize = 12.sp)
+                                    }
+                                    Button(
+                                        onClick = { onRemoveFriend(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Eliminar", color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+                                "request_sent" -> {
+                                    Button(
+                                        onClick = { onNavigateToProfile(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Ver perfil", color = Color.White, fontSize = 12.sp)
+                                    }
+                                    Button(
+                                        onClick = { user.friendRequestId?.let { onCancelRequest(it) } },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Cancelar", color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+                                "request_received" -> {
+                                    Button(
+                                        onClick = { user.friendRequestId?.let { onRejectRequest(it) } },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Eliminar", color = Color.White, fontSize = 12.sp)
+                                    }
+                                    Button(
+                                        onClick = { user.friendRequestId?.let { onAcceptRequest(it) } },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Aceptar", color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+                                else -> { // none
+                                    Button(
+                                        onClick = { onNavigateToProfile(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Ver perfil", color = Color.White, fontSize = 12.sp)
+                                    }
+                                    Button(
+                                        onClick = { onSendRequest(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0F2F1)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Agregar", color = Color(0xFF00796B), fontSize = 12.sp)
+                                    }
+                                }
                             }
                         }
                     }

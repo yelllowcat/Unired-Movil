@@ -149,7 +149,7 @@ const getUserPosts = async (userId, page = 1, limit = 20) => {
   }));
 };
 
-const searchUsers = async (query, limit = 20) => {
+const searchUsers = async (query, currentUserId, limit = 20) => {
   if (!query) return [];
 
   const users = await prisma.user.findMany({
@@ -169,7 +169,57 @@ const searchUsers = async (query, limit = 20) => {
     take: limit,
   });
 
-  return users;
+  if (!currentUserId) {
+    return users.map(u => ({
+      ...u,
+      friendshipStatus: "none",
+      friendRequestId: null
+    }));
+  }
+
+  const currentUserIdInt = parseInt(currentUserId, 10);
+  const result = [];
+
+  for (const user of users) {
+    if (user.userId === currentUserIdInt) {
+      user.friendshipStatus = "me";
+      user.friendRequestId = null;
+    } else {
+      const friendship = await prisma.friend.findFirst({
+        where: {
+          OR: [
+            { userId1: currentUserIdInt, userId2: user.userId },
+            { userId1: user.userId, userId2: currentUserIdInt }
+          ]
+        }
+      });
+
+      if (friendship) {
+        user.friendshipStatus = "friends";
+        user.friendRequestId = null;
+      } else {
+        const request = await prisma.friendRequest.findFirst({
+          where: {
+            OR: [
+              { senderId: currentUserIdInt, receiverId: user.userId, status: "pending" },
+              { senderId: user.userId, receiverId: currentUserIdInt, status: "pending" }
+            ]
+          }
+        });
+
+        if (request) {
+          user.friendshipStatus = request.senderId === currentUserIdInt ? "request_sent" : "request_received";
+          user.friendRequestId = request.requestId;
+        } else {
+          user.friendshipStatus = "none";
+          user.friendRequestId = null;
+        }
+      }
+    }
+    result.push(user);
+  }
+
+  return result;
 };
 
 export default {

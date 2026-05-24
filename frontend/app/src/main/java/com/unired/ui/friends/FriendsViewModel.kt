@@ -127,14 +127,17 @@ class FriendsViewModel(
         }
     }
 
+    private fun refreshCurrentTab() {
+        loadTabContent(currentTab)
+    }
+
     fun sendRequest(receiverId: Int) {
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             try {
                 friendRepository.sendRequest(receiverId)
-                // Refresh to show that the request was sent
-                loadTabContent(currentTab)
+                refreshCurrentTab()
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al enviar la solicitud"
             } finally {
@@ -149,7 +152,7 @@ class FriendsViewModel(
             errorMessage = null
             try {
                 friendRepository.respondToRequest(requestId, "accepted")
-                loadTabContent(FriendsTab.SOLICITUDES)
+                refreshCurrentTab()
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al aceptar la solicitud"
             } finally {
@@ -164,7 +167,7 @@ class FriendsViewModel(
             errorMessage = null
             try {
                 friendRepository.respondToRequest(requestId, "rejected")
-                loadTabContent(FriendsTab.SOLICITUDES)
+                refreshCurrentTab()
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al rechazar la solicitud"
             } finally {
@@ -179,9 +182,24 @@ class FriendsViewModel(
             errorMessage = null
             try {
                 friendRepository.cancelRequest(requestId)
-                loadTabContent(FriendsTab.PENDIENTES)
+                refreshCurrentTab()
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al cancelar la solicitud"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun removeFriend(userId: Int) {
+        viewModelScope.launch {
+            isLoading = true
+            errorMessage = null
+            try {
+                friendRepository.removeFriend(userId)
+                refreshCurrentTab()
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Error al eliminar amigo"
             } finally {
                 isLoading = false
             }
