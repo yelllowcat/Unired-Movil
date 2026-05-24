@@ -21,6 +21,7 @@ import com.unired.data.model.Post
 import com.unired.R
 import com.unired.data.api.ApiClient
 import com.unired.ui.components.AvatarImage
+import com.unired.ui.components.LikeButton
 import com.unired.ui.theme.UniRedBackground
 import com.unired.util.DateFormatter
 
@@ -111,17 +112,11 @@ fun PostCard(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onLikeClick) {
-                    Image(
-                        painter = painterResource(id = if (post.hasLiked) R.drawable.ic_heart_like else R.drawable.ic_heart),
-                        contentDescription = "Me gusta",
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Text(
-                    text = post.likesCount.toString(),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
+                LikeButton(
+                    hasLiked = post.hasLiked,
+                    likesCount = post.likesCount,
+                    onLikeClick = onLikeClick,
+                    useCustomPostIcons = true
                 )
 
                 Spacer(modifier = Modifier.width(24.dp))

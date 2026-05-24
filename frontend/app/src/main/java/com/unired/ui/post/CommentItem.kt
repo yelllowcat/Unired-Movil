@@ -22,6 +22,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import com.unired.data.model.Comment
 import com.unired.data.model.Reply
+import com.unired.ui.components.LikeButton
 import com.unired.util.DateFormatter
 import com.unired.util.SessionManager
 import androidx.compose.animation.AnimatedVisibility
@@ -142,34 +143,14 @@ fun CommentItem(
                     
                     Spacer(modifier = Modifier.weight(1f))
                     
-                    val commentLikeScale by animateFloatAsState(
-                        targetValue = if (comment.hasLiked) 1.3f else 1.0f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        ),
-                        label = "commentLikeScale"
+                    LikeButton(
+                        hasLiked = comment.hasLiked,
+                        likesCount = comment.likesCount,
+                        onLikeClick = onLikeClick,
+                        iconSize = 16.dp,
+                        fontSize = 12.sp,
+                        textColor = Color.Gray
                     )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { onLikeClick() }
-                    ) {
-                        Icon(
-                            imageVector = if (comment.hasLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = "Me gusta",
-                            tint = if (comment.hasLiked) Color.Red else Color.Gray,
-                            modifier = Modifier
-                                .size(16.dp)
-                                .scale(commentLikeScale)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = comment.likesCount.toString(),
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                    }
                 }
             }
         }

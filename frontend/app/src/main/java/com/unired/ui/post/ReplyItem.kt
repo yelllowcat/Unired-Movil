@@ -21,6 +21,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import com.unired.data.model.Reply
+import com.unired.ui.components.LikeButton
 import com.unired.util.DateFormatter
 import com.unired.util.SessionManager
 
@@ -111,34 +112,14 @@ fun ReplyItem(
                         color = Color.Gray
                     )
                     
-                    val replyLikeScale by animateFloatAsState(
-                        targetValue = if (reply.hasLiked) 1.3f else 1.0f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        ),
-                        label = "replyLikeScale"
+                    LikeButton(
+                        hasLiked = reply.hasLiked,
+                        likesCount = reply.likesCount,
+                        onLikeClick = onLikeClick,
+                        iconSize = 14.dp,
+                        fontSize = 11.sp,
+                        textColor = Color.Gray
                     )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { onLikeClick() }
-                    ) {
-                        Icon(
-                            imageVector = if (reply.hasLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = "Me gusta respuesta",
-                            tint = if (reply.hasLiked) Color.Red else Color.Gray,
-                            modifier = Modifier
-                                .size(14.dp)
-                                .scale(replyLikeScale)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = reply.likesCount.toString(),
-                            fontSize = 11.sp,
-                            color = Color.Gray
-                        )
-                    }
                 }
             }
         }

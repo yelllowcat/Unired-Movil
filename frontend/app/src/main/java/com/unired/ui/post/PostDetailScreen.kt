@@ -47,6 +47,7 @@ import com.unired.data.api.ApiClient
 import com.unired.data.model.Comment
 import com.unired.data.model.Reply
 import com.unired.ui.components.AvatarImage
+import com.unired.ui.components.LikeButton
 import com.unired.ui.components.LoadingIndicator
 import com.unired.util.DateFormatter
 
@@ -356,34 +357,12 @@ fun PostDetailScreen(
                                             .padding(horizontal = 16.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        val postLikeScale by animateFloatAsState(
-                                            targetValue = if (post.hasLiked) 1.25f else 1.0f,
-                                            animationSpec = spring(
-                                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                stiffness = Spring.StiffnessLow
-                                            ),
-                                            label = "postLikeScale"
+                                        LikeButton(
+                                            hasLiked = post.hasLiked,
+                                            likesCount = post.likesCount,
+                                            onLikeClick = { viewModel.togglePostLike() },
+                                            useCustomPostIcons = true
                                         )
-
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.clickable { viewModel.togglePostLike() }
-                                        ) {
-                                            Image(
-                                                painter = painterResource(id = if (post.hasLiked) R.drawable.ic_heart_like else R.drawable.ic_heart),
-                                                contentDescription = "Me gusta",
-                                                modifier = Modifier
-                                                    .size(24.dp)
-                                                    .scale(postLikeScale)
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = post.likesCount.toString(),
-                                                fontSize = 14.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                color = Color.DarkGray
-                                            )
-                                        }
 
                                         Spacer(modifier = Modifier.width(32.dp))
 
