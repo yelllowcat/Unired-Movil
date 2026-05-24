@@ -8,9 +8,11 @@ import androidx.lifecycle.viewModelScope
 import com.unired.data.model.Comment
 import com.unired.data.model.Post
 import com.unired.data.model.Reply
+import com.unired.data.model.User
 import com.unired.data.repository.CommentRepository
 import com.unired.data.repository.PostRepository
 import com.unired.data.repository.ReplyRepository
+import com.unired.data.repository.UserRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -25,16 +27,32 @@ class PostDetailViewModel(
     private val postId: Int,
     private val postRepository: PostRepository = PostRepository(),
     private val commentRepository: CommentRepository = CommentRepository(),
-    private val replyRepository: ReplyRepository = ReplyRepository()
+    private val replyRepository: ReplyRepository = ReplyRepository(),
+    private val userRepository: UserRepository = UserRepository()
 ) : ViewModel() {
 
     var uiState by mutableStateOf<PostDetailUiState>(PostDetailUiState.Loading)
         private set
 
     val repliesMap = androidx.compose.runtime.mutableStateMapOf<Int, List<Reply>>()
+    private var currentUser: User? = null
 
     init {
         loadPostDetail()
+        loadCurrentUserProfile()
+    }
+
+    private fun loadCurrentUserProfile() {
+        viewModelScope.launch {
+            try {
+                val myId = com.unired.util.SessionManager.getUserId()
+                if (myId != -1) {
+                    currentUser = userRepository.getProfile(myId)
+                }
+            } catch (e: Exception) {
+                // Fail silently
+            }
+        }
     }
 
     fun loadPostDetail() {
@@ -158,14 +176,49 @@ class PostDetailViewModel(
         viewModelScope.launch {
             val currentState = uiState
             if (currentState is PostDetailUiState.Success) {
+                val tempId = -1 * (System.currentTimeMillis() % 1000000).toInt()
+                val tempComment = Comment(
+                    commentId = tempId,
+                    postId = postId,
+                    userId = com.unired.util.SessionManager.getUserId(),
+                    content = content,
+                    createdAt = java.time.Instant.now().toString(),
+                    fullName = currentUser?.fullName ?: "Tú",
+                    profilePicture = currentUser?.profilePicture ?: "",
+                    likesCount = 0,
+                    repliesCount = 0,
+                    hasLiked = false
+                )
+                
+                // Optimistic update
+                val originalComments = currentState.comments
+                val updatedComments = originalComments + tempComment
+                val updatedPost = currentState.post.copy(commentsCount = currentState.post.commentsCount + 1)
+                uiState = currentState.copy(post = updatedPost, comments = updatedComments)
+                
+                // Clear the text field immediately
+                onSuccess()
+
                 try {
                     val newComment = commentRepository.addComment(postId, content)
-                    val updatedComments = currentState.comments + newComment
-                    val updatedPost = currentState.post.copy(commentsCount = currentState.post.commentsCount + 1)
-                    uiState = currentState.copy(post = updatedPost, comments = updatedComments)
-                    onSuccess()
+                    // Replace temp comment with real one
+                    val currentSuccessState = uiState as? PostDetailUiState.Success
+                    if (currentSuccessState != null) {
+                        val syncedComments = currentSuccessState.comments.map {
+                            if (it.commentId == tempId) newComment else it
+                        }
+                        uiState = currentSuccessState.copy(comments = syncedComments)
+                    }
                 } catch (e: Exception) {
-                    // Fail silently or handle
+                    // Revert on failure
+                    val currentSuccessState = uiState as? PostDetailUiState.Success
+                    if (currentSuccessState != null) {
+                        val revertedComments = currentSuccessState.comments.filter { it.commentId != tempId }
+                        val revertedPost = currentSuccessState.post.copy(
+                            commentsCount = maxOf(0, currentSuccessState.post.commentsCount - 1)
+                        )
+                        uiState = currentSuccessState.copy(post = revertedPost, comments = revertedComments)
+                    }
                 }
             }
         }
@@ -235,23 +288,60 @@ class PostDetailViewModel(
         viewModelScope.launch {
             val currentState = uiState
             if (currentState is PostDetailUiState.Success) {
+                val tempId = -1 * (System.currentTimeMillis() % 1000000).toInt()
+                val tempReply = Reply(
+                    replyId = tempId,
+                    commentId = commentId,
+                    userId = com.unired.util.SessionManager.getUserId(),
+                    content = content,
+                    createdAt = java.time.Instant.now().toString(),
+                    fullName = currentUser?.fullName ?: "Tú",
+                    profilePicture = currentUser?.profilePicture ?: "",
+                    likesCount = 0,
+                    hasLiked = false
+                )
+
+                // Optimistic update of replies list
+                val originalReplies = repliesMap[commentId] ?: emptyList()
+                repliesMap[commentId] = originalReplies + tempReply
+
+                // Optimistic update of repliesCount on parent comment
+                val originalComments = currentState.comments
+                val updatedComments = originalComments.map { comment ->
+                    if (comment.commentId == commentId) {
+                        comment.copy(repliesCount = comment.repliesCount + 1)
+                    } else {
+                        comment
+                    }
+                }
+                uiState = currentState.copy(comments = updatedComments)
+                
+                // Clear the text field immediately
+                onSuccess()
+
                 try {
                     val newReply = replyRepository.addReply(commentId, content)
+                    // Replace temp reply with real one
                     val currentReplies = repliesMap[commentId] ?: emptyList()
-                    repliesMap[commentId] = currentReplies + newReply
-                    
-                    // Update repliesCount on parent comment
-                    val updatedComments = currentState.comments.map { comment ->
-                        if (comment.commentId == commentId) {
-                            comment.copy(repliesCount = comment.repliesCount + 1)
-                        } else {
-                            comment
-                        }
+                    repliesMap[commentId] = currentReplies.map {
+                        if (it.replyId == tempId) newReply else it
                     }
-                    uiState = currentState.copy(comments = updatedComments)
-                    onSuccess()
                 } catch (e: Exception) {
-                    // Fail silently
+                    // Revert on failure
+                    val currentReplies = repliesMap[commentId] ?: emptyList()
+                    repliesMap[commentId] = currentReplies.filter { it.replyId != tempId }
+                    
+                    val currentSuccessState = uiState as? PostDetailUiState.Success
+                    if (currentSuccessState != null) {
+                        val revertedComments = currentSuccessState.comments.map { comment ->
+                            if (comment.commentId == commentId) {
+                                comment.copy(repliesCount = maxOf(0, comment.repliesCount - 1))
+                            } else {
+                                comment
+                            }
+                        }
+                        uiState = currentSuccessState.copy(comments = revertedComments)
+                    }
                 }
             }
         }

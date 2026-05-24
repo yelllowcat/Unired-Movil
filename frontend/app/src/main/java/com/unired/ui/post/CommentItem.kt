@@ -12,14 +12,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import com.unired.data.model.Comment
 import com.unired.data.model.Reply
 import com.unired.util.DateFormatter
 import com.unired.util.SessionManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 
 @Composable
 fun CommentItem(
@@ -106,78 +117,119 @@ fun CommentItem(
                     fontSize = 14.sp,
                     color = Color.DarkGray
                 )
-            }
-        }
-        
-        // Footer Row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = DateFormatter.formatRelativeTime(comment.createdAt),
-                fontSize = 12.sp,
-                color = Color.Gray
-            )
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Text(
-                text = "Responder",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray,
-                modifier = Modifier.clickable { onReplyClick() }
-            )
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { onLikeClick() }
-            ) {
-                Icon(
-                    imageVector = if (comment.hasLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = "Me gusta",
-                    tint = if (comment.hasLiked) Color.Red else Color.Gray,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = comment.likesCount.toString(),
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = DateFormatter.formatRelativeTime(comment.createdAt),
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    Text(
+                        text = "Responder",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray,
+                        modifier = Modifier.clickable { onReplyClick() }
+                    )
+                    
+                    Spacer(modifier = Modifier.weight(1f))
+                    
+                    val commentLikeScale by animateFloatAsState(
+                        targetValue = if (comment.hasLiked) 1.3f else 1.0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
+                        label = "commentLikeScale"
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { onLikeClick() }
+                    ) {
+                        Icon(
+                            imageVector = if (comment.hasLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = "Me gusta",
+                            tint = if (comment.hasLiked) Color.Red else Color.Gray,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .scale(commentLikeScale)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = comment.likesCount.toString(),
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
             }
         }
         
         if (replies.isNotEmpty()) {
+            var repliesExpanded by remember { mutableStateOf(false) }
+
+            // Toggle Button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, top = 4.dp, end = 4.dp)
-                    .height(IntrinsicSize.Min)
+                    .padding(start = 12.dp, top = 4.dp, bottom = 4.dp)
+                    .clickable { repliesExpanded = !repliesExpanded },
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(2.dp)
-                        .background(Color(0xFFD3D3D3))
+                Icon(
+                    imageVector = if (repliesExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = Color(0xFF40B6BA),
+                    modifier = Modifier.size(16.dp)
                 )
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                Column(
-                    modifier = Modifier.weight(1f)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = if (repliesExpanded) "Ocultar respuestas" else "Ver respuestas (${replies.size})",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF40B6BA)
+                )
+            }
+
+            AnimatedVisibility(
+                visible = repliesExpanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, top = 4.dp, end = 4.dp)
+                        .height(IntrinsicSize.Min)
                 ) {
-                    replies.forEach { reply ->
-                        ReplyItem(
-                            reply = reply,
-                            onLikeClick = { onReplyLikeClick(reply) },
-                            onDeleteClick = { onDeleteReplyClick(reply) }
-                        )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(2.dp)
+                            .background(Color(0xFFD3D3D3))
+                    )
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        replies.forEach { reply ->
+                            ReplyItem(
+                                reply = reply,
+                                onLikeClick = { onReplyLikeClick(reply) },
+                                onDeleteClick = { onDeleteReplyClick(reply) }
+                            )
+                        }
                     }
                 }
             }

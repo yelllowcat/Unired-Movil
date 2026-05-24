@@ -10,16 +10,29 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -53,7 +66,7 @@ fun PostDetailScreen(
     )
 ) {
     val uiState = viewModel.uiState
-    var commentText by remember { mutableStateOf("") }
+    var commentText by remember { mutableStateOf(CommentDraftManager.getDraft(postId)) }
     var activeReplyingComment by remember { mutableStateOf<Comment?>(null) }
     val serverUrl = ApiClient.BASE_URL.substringBefore("/api/")
 
@@ -143,7 +156,10 @@ fun PostDetailScreen(
                             ) {
                                 TextField(
                                     value = commentText,
-                                    onValueChange = { commentText = it },
+                                    onValueChange = { 
+                                        commentText = it
+                                        CommentDraftManager.saveDraft(postId, it)
+                                    },
                                     placeholder = { Text(if (activeReplyingComment != null) "Responder" else "Comentar", color = Color.Gray) },
                                     modifier = Modifier
                                         .weight(1f)
@@ -173,6 +189,7 @@ fun PostDetailScreen(
                                                 } else {
                                                     viewModel.addComment(text) {
                                                         commentText = ""
+                                                        CommentDraftManager.clearDraft(postId)
                                                     }
                                                 }
                                             }
@@ -193,6 +210,7 @@ fun PostDetailScreen(
                                             } else {
                                                 viewModel.addComment(text) {
                                                     commentText = ""
+                                                    CommentDraftManager.clearDraft(postId)
                                                 }
                                             }
                                         }
@@ -338,6 +356,15 @@ fun PostDetailScreen(
                                             .padding(horizontal = 16.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        val postLikeScale by animateFloatAsState(
+                                            targetValue = if (post.hasLiked) 1.25f else 1.0f,
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessLow
+                                            ),
+                                            label = "postLikeScale"
+                                        )
+
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             modifier = Modifier.clickable { viewModel.togglePostLike() }
@@ -345,7 +372,9 @@ fun PostDetailScreen(
                                             Image(
                                                 painter = painterResource(id = if (post.hasLiked) R.drawable.ic_heart_like else R.drawable.ic_heart),
                                                 contentDescription = "Me gusta",
-                                                modifier = Modifier.size(24.dp)
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .scale(postLikeScale)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
@@ -385,18 +414,92 @@ fun PostDetailScreen(
                             // Comments lazy list
                             if (comments.isEmpty()) {
                                 item {
-                                    Box(
+                                    // Animated bouncing offset for a subtle micro-animation on the downward arrow
+                                    val infiniteTransition = rememberInfiniteTransition(label = "arrow_bounce")
+                                    val dy by infiniteTransition.animateFloat(
+                                        initialValue = 0f,
+                                        targetValue = 6f,
+                                        animationSpec = infiniteRepeatable(
+                                            animation = tween(durationMillis = 1000, easing = LinearOutSlowInEasing),
+                                            repeatMode = RepeatMode.Reverse
+                                        ),
+                                        label = "dy"
+                                    )
+
+                                    Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 32.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "No hay comentarios aún. ¡Sé el primero en comentar!",
-                                            color = Color.White.copy(alpha = 0.8f),
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium
+                                            .padding(horizontal = 24.dp, vertical = 24.dp)
+                                            .shadow(8.dp, shape = RoundedCornerShape(24.dp)),
+                                        shape = RoundedCornerShape(24.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = Color.White
+                                        ),
+                                        border = BorderStroke(
+                                            width = 1.dp,
+                                            color = Color.LightGray.copy(alpha = 0.5f)
                                         )
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 24.dp, vertical = 32.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            // Glowing Icon Container
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(72.dp)
+                                                    .background(
+                                                        color = Color(0xFF40B6BA).copy(alpha = 0.1f),
+                                                        shape = CircleShape
+                                                    ),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.ic_coment),
+                                                    contentDescription = null,
+                                                    tint = Color(0xFF40B6BA),
+                                                    modifier = Modifier.size(36.dp)
+                                                )
+                                            }
+
+                                            Spacer(modifier = Modifier.height(20.dp))
+
+                                            // Main Text
+                                            Text(
+                                                text = "Sin comentarios aún",
+                                                color = Color.Black,
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                textAlign = TextAlign.Center
+                                            )
+
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            // Supporting Text
+                                            Text(
+                                                text = "¡Sé el primero en compartir tu opinión! Escribe tu comentario en la parte inferior.",
+                                                color = Color.DarkGray,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Normal,
+                                                textAlign = TextAlign.Center,
+                                                lineHeight = 20.sp
+                                            )
+
+                                            Spacer(modifier = Modifier.height(24.dp))
+
+                                            // Bouncing arrow pointer helper pointing down
+                                            Icon(
+                                                imageVector = Icons.Default.KeyboardArrowDown,
+                                                contentDescription = null,
+                                                tint = Color(0xFF40B6BA),
+                                                modifier = Modifier
+                                                    .size(28.dp)
+                                                    .offset(y = dy.dp)
+                                            )
+                                        }
                                     }
                                 }
                             } else {
@@ -433,5 +536,23 @@ fun PostDetailScreen(
                 }
             }
         }
+    }
+}
+
+object CommentDraftManager {
+    private val drafts = mutableMapOf<Int, String>()
+
+    fun saveDraft(postId: Int, text: String) {
+        if (text.isEmpty()) {
+            drafts.remove(postId)
+        } else {
+            drafts[postId] = text
+        }
+    }
+
+    fun getDraft(postId: Int): String = drafts[postId] ?: ""
+
+    fun clearDraft(postId: Int) {
+        drafts.remove(postId)
     }
 }
