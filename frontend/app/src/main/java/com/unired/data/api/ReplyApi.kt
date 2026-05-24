@@ -2,6 +2,7 @@ package com.unired.data.api
 
 import com.unired.data.model.Reply
 import com.unired.data.model.request.CreateReplyRequest
+import com.unired.data.model.response.LikeResult
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -20,4 +21,7 @@ interface ReplyApi {
 
     @DELETE("replies/{id}")
     suspend fun deleteReply(@Path("id") replyId: Int): ApiResponse<Unit>
+
+    @POST("replies/{id}/like")
+    suspend fun toggleLike(@Path("id") replyId: Int): ApiResponse<LikeResult>
 }

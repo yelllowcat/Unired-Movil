@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.unired.R
 import com.unired.data.api.ApiClient
+import com.unired.data.model.Comment
+import com.unired.data.model.Reply
 import com.unired.ui.components.AvatarImage
 import com.unired.ui.components.LoadingIndicator
 import com.unired.util.DateFormatter
@@ -52,6 +54,7 @@ fun PostDetailScreen(
 ) {
     val uiState = viewModel.uiState
     var commentText by remember { mutableStateOf("") }
+    var activeReplyingComment by remember { mutableStateOf<Comment?>(null) }
     val serverUrl = ApiClient.BASE_URL.substringBefore("/api/")
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -101,59 +104,109 @@ fun PostDetailScreen(
                         color = Color.White,
                         tonalElevation = 8.dp
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            TextField(
-                                value = commentText,
-                                onValueChange = { commentText = it },
-                                placeholder = { Text("Comentar", color = Color.Gray) },
+                            if (activeReplyingComment != null) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFFF5F5F5))
+                                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Respondiendo a ${activeReplyingComment!!.fullName}",
+                                        fontSize = 12.sp,
+                                        color = Color.Gray
+                                    )
+                                    IconButton(
+                                        onClick = { activeReplyingComment = null },
+                                        modifier = Modifier.size(18.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Cancelar respuesta",
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(end = 8.dp),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color(0xFFF5F5F5),
-                                    unfocusedContainerColor = Color(0xFFF5F5F5),
-                                    disabledContainerColor = Color(0xFFF5F5F5),
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                ),
-                                shape = RoundedCornerShape(24.dp),
-                                maxLines = 4,
-                                keyboardOptions = KeyboardOptions(
-                                    imeAction = ImeAction.Send
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onSend = {
-                                        if (commentText.isNotBlank()) {
-                                            viewModel.addComment(commentText) {
-                                                commentText = ""
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextField(
+                                    value = commentText,
+                                    onValueChange = { commentText = it },
+                                    placeholder = { Text(if (activeReplyingComment != null) "Responder" else "Comentar", color = Color.Gray) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 8.dp),
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color(0xFFF5F5F5),
+                                        unfocusedContainerColor = Color(0xFFF5F5F5),
+                                        disabledContainerColor = Color(0xFFF5F5F5),
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent
+                                    ),
+                                    shape = RoundedCornerShape(24.dp),
+                                    maxLines = 4,
+                                    keyboardOptions = KeyboardOptions(
+                                        imeAction = ImeAction.Send
+                                    ),
+                                    keyboardActions = KeyboardActions(
+                                        onSend = {
+                                            if (commentText.isNotBlank()) {
+                                                val text = commentText
+                                                val replyTo = activeReplyingComment
+                                                if (replyTo != null) {
+                                                    viewModel.addReply(replyTo.commentId, text) {
+                                                        commentText = ""
+                                                        activeReplyingComment = null
+                                                    }
+                                                } else {
+                                                    viewModel.addComment(text) {
+                                                        commentText = ""
+                                                    }
+                                                }
                                             }
                                         }
-                                    }
+                                    )
                                 )
-                            )
 
-                            IconButton(
-                                onClick = {
-                                    if (commentText.isNotBlank()) {
-                                        viewModel.addComment(commentText) {
-                                            commentText = ""
+                                IconButton(
+                                    onClick = {
+                                        if (commentText.isNotBlank()) {
+                                            val text = commentText
+                                            val replyTo = activeReplyingComment
+                                            if (replyTo != null) {
+                                                viewModel.addReply(replyTo.commentId, text) {
+                                                    commentText = ""
+                                                    activeReplyingComment = null
+                                                }
+                                            } else {
+                                                viewModel.addComment(text) {
+                                                    commentText = ""
+                                                }
+                                            }
                                         }
-                                    }
-                                },
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(Color(0xFFE0E0E0), shape = CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.Send,
-                                    contentDescription = "Enviar comentario",
-                                    tint = Color.Black
-                                )
+                                    },
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(Color(0xFFE0E0E0), shape = CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Send,
+                                        contentDescription = "Enviar comentario",
+                                        tint = Color.Black
+                                    )
+                                }
                             }
                         }
                     }
@@ -357,7 +410,14 @@ fun PostDetailScreen(
                                         onDeleteClick = { viewModel.deleteComment(comment.commentId) },
                                         onHideClick = { viewModel.hideComment(comment.commentId) },
                                         onReplyClick = {
-                                            commentText = "@${comment.fullName} "
+                                            activeReplyingComment = comment
+                                        },
+                                        replies = viewModel.repliesMap[comment.commentId] ?: emptyList(),
+                                        onReplyLikeClick = { reply ->
+                                            viewModel.toggleReplyLike(comment.commentId, reply.replyId)
+                                        },
+                                        onDeleteReplyClick = { reply ->
+                                            viewModel.deleteReply(comment.commentId, reply.replyId)
                                         },
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                                     )

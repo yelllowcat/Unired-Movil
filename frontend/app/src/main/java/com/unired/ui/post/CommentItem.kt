@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.unired.data.model.Comment
+import com.unired.data.model.Reply
 import com.unired.util.DateFormatter
 import com.unired.util.SessionManager
 
@@ -27,6 +28,9 @@ fun CommentItem(
     onDeleteClick: () -> Unit,
     onHideClick: () -> Unit,
     onReplyClick: () -> Unit,
+    replies: List<Reply>,
+    onReplyLikeClick: (Reply) -> Unit,
+    onDeleteReplyClick: (Reply) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -146,6 +150,36 @@ fun CommentItem(
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
+            }
+        }
+        
+        if (replies.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, top = 4.dp, end = 4.dp)
+                    .height(IntrinsicSize.Min)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(2.dp)
+                        .background(Color(0xFFD3D3D3))
+                )
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    replies.forEach { reply ->
+                        ReplyItem(
+                            reply = reply,
+                            onLikeClick = { onReplyLikeClick(reply) },
+                            onDeleteClick = { onDeleteReplyClick(reply) }
+                        )
+                    }
+                }
             }
         }
     }

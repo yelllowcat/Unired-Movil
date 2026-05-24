@@ -6,7 +6,7 @@ const getReplies = asyncHandler(async (req, res) => {
   const commentId = parseInt(req.params.commentId, 10);
   if (isNaN(commentId)) throw new ApiError(400, 'ID de comentario inválido');
 
-  const replies = await replyService.getRepliesByComment(commentId);
+  const replies = await replyService.getRepliesByComment(commentId, req.user.userId);
   res.status(200).json({ success: true, data: replies });
 });
 
@@ -29,8 +29,17 @@ const deleteReply = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, message: 'Respuesta eliminada' });
 });
 
+const toggleReplyLike = asyncHandler(async (req, res) => {
+  const replyId = parseInt(req.params.id, 10);
+  if (isNaN(replyId)) throw new ApiError(400, 'ID de respuesta inválido');
+
+  const result = await replyService.toggleReplyLike(replyId, req.user.userId);
+  res.status(200).json({ success: true, data: result });
+});
+
 export default {
   getReplies,
   createReply,
   deleteReply,
+  toggleReplyLike,
 };

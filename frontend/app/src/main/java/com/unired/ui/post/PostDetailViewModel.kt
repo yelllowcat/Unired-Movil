@@ -7,8 +7,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unired.data.model.Comment
 import com.unired.data.model.Post
+import com.unired.data.model.Reply
 import com.unired.data.repository.CommentRepository
 import com.unired.data.repository.PostRepository
+import com.unired.data.repository.ReplyRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -22,11 +24,14 @@ sealed interface PostDetailUiState {
 class PostDetailViewModel(
     private val postId: Int,
     private val postRepository: PostRepository = PostRepository(),
-    private val commentRepository: CommentRepository = CommentRepository()
+    private val commentRepository: CommentRepository = CommentRepository(),
+    private val replyRepository: ReplyRepository = ReplyRepository()
 ) : ViewModel() {
 
     var uiState by mutableStateOf<PostDetailUiState>(PostDetailUiState.Loading)
         private set
+
+    val repliesMap = androidx.compose.runtime.mutableStateMapOf<Int, List<Reply>>()
 
     init {
         loadPostDetail()
@@ -44,6 +49,13 @@ class PostDetailViewModel(
                     val comments = commentsDeferred.await()
                     
                     uiState = PostDetailUiState.Success(post, comments)
+                    
+                    // Auto-load replies for comments
+                    comments.forEach { comment ->
+                        if (comment.repliesCount > 0) {
+                            loadRepliesForComment(comment.commentId)
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 uiState = PostDetailUiState.Error(e.message ?: "Error al cargar la publicación")
@@ -201,6 +213,127 @@ class PostDetailViewModel(
                     val currentSuccessState = uiState as? PostDetailUiState.Success
                     if (currentSuccessState != null) {
                         uiState = currentSuccessState.copy(comments = originalComments)
+                    }
+                }
+            }
+        }
+    }
+
+    fun loadRepliesForComment(commentId: Int) {
+        viewModelScope.launch {
+            try {
+                val replies = replyRepository.getReplies(commentId)
+                repliesMap[commentId] = replies
+            } catch (e: Exception) {
+                // Fail silently
+            }
+        }
+    }
+
+    fun addReply(commentId: Int, content: String, onSuccess: () -> Unit = {}) {
+        if (content.isBlank()) return
+        viewModelScope.launch {
+            val currentState = uiState
+            if (currentState is PostDetailUiState.Success) {
+                try {
+                    val newReply = replyRepository.addReply(commentId, content)
+                    val currentReplies = repliesMap[commentId] ?: emptyList()
+                    repliesMap[commentId] = currentReplies + newReply
+                    
+                    // Update repliesCount on parent comment
+                    val updatedComments = currentState.comments.map { comment ->
+                        if (comment.commentId == commentId) {
+                            comment.copy(repliesCount = comment.repliesCount + 1)
+                        } else {
+                            comment
+                        }
+                    }
+                    uiState = currentState.copy(comments = updatedComments)
+                    onSuccess()
+                } catch (e: Exception) {
+                    // Fail silently
+                }
+            }
+        }
+    }
+
+    fun deleteReply(commentId: Int, replyId: Int) {
+        viewModelScope.launch {
+            val currentState = uiState
+            if (currentState is PostDetailUiState.Success) {
+                val originalReplies = repliesMap[commentId] ?: emptyList()
+                val updatedReplies = originalReplies.filter { it.replyId != replyId }
+                repliesMap[commentId] = updatedReplies
+                
+                // Update repliesCount on parent comment
+                val updatedComments = currentState.comments.map { comment ->
+                    if (comment.commentId == commentId) {
+                        comment.copy(repliesCount = maxOf(0, comment.repliesCount - 1))
+                    } else {
+                        comment
+                    }
+                }
+                uiState = currentState.copy(comments = updatedComments)
+
+                try {
+                    replyRepository.deleteReply(replyId)
+                } catch (e: Exception) {
+                    // Revert in case of failure
+                    repliesMap[commentId] = originalReplies
+                    val revertedComments = currentState.comments.map { comment ->
+                        if (comment.commentId == commentId) {
+                            comment.copy(repliesCount = comment.repliesCount)
+                        } else {
+                            comment
+                        }
+                    }
+                    uiState = currentState.copy(comments = revertedComments)
+                }
+            }
+        }
+    }
+
+    fun toggleReplyLike(commentId: Int, replyId: Int) {
+        viewModelScope.launch {
+            val currentState = uiState
+            if (currentState is PostDetailUiState.Success) {
+                val originalReplies = repliesMap[commentId] ?: emptyList()
+                var originalReply: Reply? = null
+                val updatedReplies = originalReplies.map { reply ->
+                    if (reply.replyId == replyId) {
+                        originalReply = reply
+                        val newHasLiked = !reply.hasLiked
+                        val newLikesCount = if (newHasLiked) reply.likesCount + 1 else maxOf(0, reply.likesCount - 1)
+                        reply.copy(hasLiked = newHasLiked, likesCount = newLikesCount)
+                    } else {
+                        reply
+                    }
+                }
+                repliesMap[commentId] = updatedReplies
+
+                try {
+                    val result = replyRepository.toggleLike(replyId)
+                    val currentReplies = repliesMap[commentId] ?: emptyList()
+                    val syncedReplies = currentReplies.map { reply ->
+                        if (reply.replyId == replyId && originalReply != null) {
+                            val correctLikesCount = if (result.liked) {
+                                if (!originalReply!!.hasLiked) originalReply!!.likesCount + 1 else originalReply!!.likesCount
+                            } else {
+                                if (originalReply!!.hasLiked) originalReply!!.likesCount - 1 else originalReply!!.likesCount
+                            }
+                            reply.copy(hasLiked = result.liked, likesCount = correctLikesCount)
+                        } else {
+                            reply
+                        }
+                    }
+                    repliesMap[commentId] = syncedReplies
+                } catch (e: Exception) {
+                    // Revert in case of failure
+                    if (originalReply != null) {
+                        val revertedReplies = (repliesMap[commentId] ?: emptyList()).map { reply ->
+                            if (reply.replyId == replyId) originalReply!! else reply
+                        }
+                        repliesMap[commentId] = revertedReplies
                     }
                 }
             }
