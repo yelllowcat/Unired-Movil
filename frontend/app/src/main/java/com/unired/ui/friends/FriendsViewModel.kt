@@ -38,6 +38,9 @@ class FriendsViewModel(
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
+    var isRefreshing by mutableStateOf(false)
+        private set
+
     var incomingRequests by mutableStateOf<List<FriendRequest>>(emptyList())
         private set
 
@@ -123,6 +126,35 @@ class FriendsViewModel(
                 errorMessage = e.message ?: "Error al cargar información"
             } finally {
                 isLoading = false
+            }
+        }
+    }
+
+    fun refreshFriends() {
+        viewModelScope.launch {
+            isRefreshing = true
+            errorMessage = null
+            try {
+                loadUserProfile()
+                when (currentTab) {
+                    FriendsTab.SOLICITUDES -> {
+                        incomingRequests = friendRepository.getPendingRequests()
+                    }
+                    FriendsTab.ENVIAR_SOLICITUD -> {
+                        if (searchQuery.isNotBlank()) {
+                            val results = userRepository.searchUsers(searchQuery)
+                            val currentUserId = SessionManager.getUserId()
+                            searchResults = results.filter { it.userId != currentUserId }
+                        }
+                    }
+                    FriendsTab.PENDIENTES -> {
+                        sentRequests = friendRepository.getSentRequests()
+                    }
+                }
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Error al actualizar información"
+            } finally {
+                isRefreshing = false
             }
         }
     }

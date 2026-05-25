@@ -31,6 +31,9 @@ class ProfileViewModel(
     var uiState by mutableStateOf<ProfileUiState>(ProfileUiState.Loading)
         private set
 
+    var isRefreshing by mutableStateOf(false)
+        private set
+
     val resolvedUserId: Int
         get() {
             return if (userIdArg == "me" || userIdArg.toIntOrNull() == null) {
@@ -65,6 +68,33 @@ class ProfileViewModel(
                 }
             } catch (e: Exception) {
                 uiState = ProfileUiState.Error(e.message ?: "Error al cargar el perfil")
+            }
+        }
+    }
+
+    fun refreshProfile() {
+        viewModelScope.launch {
+            isRefreshing = true
+            try {
+                coroutineScope {
+                    val id = resolvedUserId
+                    if (id != -1) {
+                        val profileDeferred = async { userRepository.getProfile(id) }
+                        val postsDeferred = async { userRepository.getUserPosts(id) }
+                        
+                        val user = profileDeferred.await()
+                        val posts = postsDeferred.await()
+                        
+                        uiState = ProfileUiState.Success(user, posts)
+                    }
+                }
+            } catch (e: Exception) {
+                val currentState = uiState
+                if (currentState !is ProfileUiState.Success) {
+                    uiState = ProfileUiState.Error(e.message ?: "Error al actualizar perfil")
+                }
+            } finally {
+                isRefreshing = false
             }
         }
     }

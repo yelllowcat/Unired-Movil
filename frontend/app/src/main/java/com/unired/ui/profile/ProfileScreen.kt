@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,6 +33,7 @@ import com.unired.ui.feed.PostCard
 import com.unired.util.DateFormatter
 import com.unired.util.SessionManager
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     userId: String,
@@ -63,15 +65,23 @@ fun ProfileScreen(
         Scaffold(
             containerColor = Color.Transparent
         ) { paddingValues ->
-            Box(
+            PullToRefreshBox(
+                isRefreshing = viewModel.isRefreshing,
+                onRefresh = { viewModel.refreshProfile() },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                when (uiState) {
-                    is ProfileUiState.Loading -> {
-                        LoadingIndicator()
-                    }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    when (uiState) {
+                        is ProfileUiState.Loading -> {
+                            if (!viewModel.isRefreshing) {
+                                LoadingIndicator()
+                            }
+                        }
                     is ProfileUiState.Error -> {
                         Column(
                             modifier = Modifier
@@ -344,6 +354,7 @@ fun ProfileScreen(
             }
         }
     }
+}
 }
 
 @Composable
