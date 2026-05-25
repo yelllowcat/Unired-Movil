@@ -15,6 +15,7 @@ import com.unired.ui.post.PostDetailScreen
 import com.unired.ui.friends.FriendsScreen
 import com.unired.ui.profile.ProfileScreen
 import com.unired.ui.profile.EditProfileScreen
+import com.unired.ui.notifications.NotificationsScreen
 
 @Composable
 fun NavGraph(
@@ -143,6 +144,17 @@ fun NavGraph(
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
+                }
+            )
+        }
+
+        composable(Screen.Notifications.route) {
+            NotificationsScreen(
+                onNavigateToPostDetail = { postId ->
+                    navController.navigate("post_detail/$postId")
+                },
+                onNavigateToProfile = { userId ->
+                    navController.navigate("profile/$userId")
                 }
             )
         }

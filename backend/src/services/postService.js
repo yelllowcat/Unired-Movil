@@ -1,5 +1,6 @@
 import prisma from "../utils/prisma.js";
 import ApiError from "../utils/ApiError.js";
+import notificationService from "./notificationService.js";
 
 const getFeed = async (currentUserId, page = 1, limit = 20) => {
   const skip = (page - 1) * limit;
@@ -158,6 +159,7 @@ const toggleLike = async (postId, userId) => {
     await prisma.like.create({
       data: { postId, userId },
     });
+    await notificationService.createNotification(post.userId, userId, "like", postId);
     return { liked: true };
   }
 };

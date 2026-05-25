@@ -29,6 +29,8 @@ model User {
   replies          Reply[]
   reply_likes      reply_likes[]
   updateLogs       UserUpdateLog[]
+  notifications    Notification[]  @relation("UserNotifications")
+  sentNotifications Notification[] @relation("SenderNotifications")
 
   @@map("users")
 }
@@ -174,4 +176,23 @@ model reply_likes {
 
   @@unique([reply_id, user_id], map: "reply_id")
   @@index([user_id], map: "user_id")
+}
+
+model Notification {
+  notificationId Int       @id @default(autoincrement()) @map("notification_id")
+  userId         Int       @map("user_id")
+  senderId       Int       @map("sender_id")
+  type           String    @db.VarChar(20)
+  postId         Int?      @map("post_id")
+  commentId      Int?      @map("comment_id")
+  replyId        Int?      @map("reply_id")
+  isRead         Boolean   @default(false) @map("is_read")
+  createdAt      DateTime? @default(now()) @map("created_at") @db.DateTime(0)
+  
+  user           User      @relation("UserNotifications", fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "notifications_ibfk_1")
+  sender         User      @relation("SenderNotifications", fields: [senderId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "notifications_ibfk_2")
+
+  @@index([userId], map: "user_id")
+  @@index([senderId], map: "sender_id")
+  @@map("notifications")
 }

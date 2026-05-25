@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma.js';
 import ApiError from '../utils/ApiError.js';
+import notificationService from './notificationService.js';
 
 const getRepliesByComment = async (commentId, currentUserId) => {
   const replies = await prisma.reply.findMany({
@@ -59,6 +60,8 @@ const createReply = async (commentId, userId, content) => {
     },
   });
 
+  await notificationService.createNotification(comment.userId, userId, "reply", comment.postId, commentId, reply.replyId);
+
   return {
     replyId: reply.replyId,
     commentId: reply.commentId,
@@ -113,6 +116,8 @@ const toggleReplyLike = async (replyId, userId) => {
         user_id: userId,
       },
     });
+    const comment = await prisma.comment.findUnique({ where: { commentId: reply.commentId } });
+    await notificationService.createNotification(reply.userId, userId, "reply_like", comment?.postId, reply.commentId, replyId);
     return { liked: true };
   }
 };

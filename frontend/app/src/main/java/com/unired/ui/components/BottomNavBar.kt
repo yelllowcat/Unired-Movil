@@ -4,20 +4,25 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 data class BottomNavItem(
     val label: String,
     val route: String,
-    val iconRes: Int
+    val iconRes: Int,
+    val badgeCount: Int = 0
 )
 
 @Composable
@@ -73,10 +78,28 @@ private fun BottomNavTab(
                 .background(if (isSelected) Color(0xFF2196F3) else Color.Transparent)
         )
         Spacer(modifier = Modifier.height(6.dp))
-        Image(
-            painter = painterResource(id = item.iconRes),
-            contentDescription = item.label,
-            modifier = Modifier.size(28.dp)
-        )
+        Box(contentAlignment = Alignment.TopEnd) {
+            Image(
+                painter = painterResource(id = item.iconRes),
+                contentDescription = item.label,
+                modifier = Modifier.size(28.dp)
+            )
+            if (item.badgeCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .offset(x = 8.dp, y = (-4).dp)
+                        .background(Color.Red, shape = CircleShape)
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (item.badgeCount > 99) "99+" else item.badgeCount.toString(),
+                        color = Color.White,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
     }
 }

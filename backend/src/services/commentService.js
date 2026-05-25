@@ -1,5 +1,6 @@
 import prisma from "../utils/prisma.js";
 import ApiError from "../utils/ApiError.js";
+import notificationService from "./notificationService.js";
 
 const getCommentsByPost = async (postId, currentUserId) => {
   const comments = await prisma.comment.findMany({
@@ -63,6 +64,8 @@ const createComment = async (postId, userId, content) => {
     },
   });
 
+  await notificationService.createNotification(post.userId, userId, "comment", postId, comment.commentId);
+
   return {
     commentId: comment.commentId,
     postId: comment.postId,
@@ -115,6 +118,7 @@ const toggleCommentLike = async (commentId, userId) => {
     await prisma.commentLike.create({
       data: { commentId, userId },
     });
+    await notificationService.createNotification(comment.userId, userId, "comment_like", comment.postId, commentId);
     return { liked: true };
   }
 };
