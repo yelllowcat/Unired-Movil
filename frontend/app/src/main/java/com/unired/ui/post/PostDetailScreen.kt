@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -492,10 +492,10 @@ fun PostDetailScreen(
                                     }
                                 }
                             } else {
-                                items(
+                                itemsIndexed(
                                     items = comments,
-                                    key = { it.commentId }
-                                ) { comment ->
+                                    key = { _, comment -> comment.commentId }
+                                ) { index, comment ->
                                     CommentItem(
                                         comment = comment,
                                         onLikeClick = { viewModel.toggleCommentLike(comment.commentId) },
@@ -513,6 +513,30 @@ fun PostDetailScreen(
                                         },
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                                     )
+
+                                    // Trigger loading next comments page when near the end of comments
+                                    if (index >= comments.lastIndex - 2) {
+                                        LaunchedEffect(index) {
+                                            viewModel.loadNextCommentsPage()
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Show progress bar at the bottom when loading next comments page
+                            if (viewModel.isLoadingMoreComments) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = Color(0xFF33B5B5)
+                                        )
+                                    }
                                 }
                             }
                             

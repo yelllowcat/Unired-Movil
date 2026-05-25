@@ -3,7 +3,7 @@ package com.unired.ui.feed
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -87,7 +87,7 @@ fun FeedScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(vertical = 8.dp)
                         ) {
-                            items(state.posts, key = { it.postId }) { post ->
+                            itemsIndexed(state.posts, key = { _, post -> post.postId }) { index, post ->
                                 PostCard(
                                     post = post,
                                     onLikeClick = { viewModel.toggleLike(post.postId) },
@@ -95,6 +95,30 @@ fun FeedScreen(
                                     onProfileClick = { onNavigateToProfile(post.userId) },
                                     onPostClick = { onNavigateToPostDetail(post.postId) }
                                 )
+
+                                // Trigger loading next page when close to the bottom
+                                if (index >= state.posts.lastIndex - 2) {
+                                    LaunchedEffect(index) {
+                                        viewModel.loadNextPage()
+                                    }
+                                }
+                            }
+
+                            // Show progress bar at the bottom when loading next page
+                            if (viewModel.isLoadingMore) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = Color(0xFF33B5B5)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

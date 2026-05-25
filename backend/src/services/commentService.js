@@ -2,7 +2,9 @@ import prisma from "../utils/prisma.js";
 import ApiError from "../utils/ApiError.js";
 import notificationService from "./notificationService.js";
 
-const getCommentsByPost = async (postId, currentUserId) => {
+const getCommentsByPost = async (postId, currentUserId, page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
   const comments = await prisma.comment.findMany({
     where: { postId, active: true },
     include: {
@@ -25,6 +27,8 @@ const getCommentsByPost = async (postId, currentUserId) => {
       },
     },
     orderBy: { createdAt: "asc" },
+    skip,
+    take: limit,
   });
 
   return comments.map((comment) => ({

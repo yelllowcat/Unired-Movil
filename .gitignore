@@ -40,3 +40,8 @@ backend/node_modules/.prisma/
 Thumbs.db
 *.swp
 *~
+
+# ========================
+# Antigravity CLI
+# ========================
+.antigravitycli/

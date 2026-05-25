@@ -25,6 +25,15 @@ class FeedViewModel(
     var isRefreshing by mutableStateOf(false)
         private set
 
+    private var currentPage = 1
+    private val pageSize = 15
+
+    var isLastPage by mutableStateOf(false)
+        private set
+
+    var isLoadingMore by mutableStateOf(false)
+        private set
+
     init {
         loadFeed()
     }
@@ -32,9 +41,14 @@ class FeedViewModel(
     fun loadFeed() {
         viewModelScope.launch {
             uiState = FeedUiState.Loading
+            currentPage = 1
+            isLastPage = false
             try {
-                val posts = postRepository.getFeed()
+                val posts = postRepository.getFeed(page = 1, limit = pageSize)
                 uiState = FeedUiState.Success(posts)
+                if (posts.size < pageSize) {
+                    isLastPage = true
+                }
             } catch (e: Exception) {
                 uiState = FeedUiState.Error(e.message ?: "Error desconocido")
             }
@@ -44,9 +58,14 @@ class FeedViewModel(
     fun refreshFeed() {
         viewModelScope.launch {
             isRefreshing = true
+            currentPage = 1
+            isLastPage = false
             try {
-                val posts = postRepository.getFeed()
+                val posts = postRepository.getFeed(page = 1, limit = pageSize)
                 uiState = FeedUiState.Success(posts)
+                if (posts.size < pageSize) {
+                    isLastPage = true
+                }
             } catch (e: Exception) {
                 val currentState = uiState
                 if (currentState !is FeedUiState.Success) {
@@ -54,6 +73,30 @@ class FeedViewModel(
                 }
             } finally {
                 isRefreshing = false
+            }
+        }
+    }
+
+    fun loadNextPage() {
+        if (isLoadingMore || isLastPage) return
+        val currentSuccessState = uiState as? FeedUiState.Success ?: return
+
+        viewModelScope.launch {
+            isLoadingMore = true
+            try {
+                val nextPage = currentPage + 1
+                val newPosts = postRepository.getFeed(page = nextPage, limit = pageSize)
+                if (newPosts.isNotEmpty()) {
+                    uiState = FeedUiState.Success(currentSuccessState.posts + newPosts)
+                    currentPage = nextPage
+                }
+                if (newPosts.size < pageSize) {
+                    isLastPage = true
+                }
+            } catch (_: Exception) {
+                // Fail silently when loading more to avoid disrupting UI
+            } finally {
+                isLoadingMore = false
             }
         }
     }

@@ -37,6 +37,15 @@ class PostDetailViewModel(
     val repliesMap = androidx.compose.runtime.mutableStateMapOf<Int, List<Reply>>()
     private var currentUser: User? = null
 
+    private var currentCommentsPage = 1
+    private val commentsPageSize = 10
+
+    var isLastCommentsPage by mutableStateOf(false)
+        private set
+
+    var isLoadingMoreComments by mutableStateOf(false)
+        private set
+
     init {
         loadPostDetail()
         loadCurrentUserProfile()
@@ -58,15 +67,20 @@ class PostDetailViewModel(
     fun loadPostDetail() {
         viewModelScope.launch {
             uiState = PostDetailUiState.Loading
+            currentCommentsPage = 1
+            isLastCommentsPage = false
             try {
                 coroutineScope {
                     val postDeferred = async { postRepository.getPost(postId) }
-                    val commentsDeferred = async { commentRepository.getComments(postId) }
+                    val commentsDeferred = async { commentRepository.getComments(postId, page = 1, limit = commentsPageSize) }
                     
                     val post = postDeferred.await()
                     val comments = commentsDeferred.await()
                     
                     uiState = PostDetailUiState.Success(post, comments)
+                    if (comments.size < commentsPageSize) {
+                        isLastCommentsPage = true
+                    }
                     
                     // Auto-load replies for comments
                     comments.forEach { comment ->
@@ -77,6 +91,37 @@ class PostDetailViewModel(
                 }
             } catch (e: Exception) {
                 uiState = PostDetailUiState.Error(e.message ?: "Error al cargar la publicación")
+            }
+        }
+    }
+
+    fun loadNextCommentsPage() {
+        if (isLoadingMoreComments || isLastCommentsPage) return
+        val currentSuccessState = uiState as? PostDetailUiState.Success ?: return
+
+        viewModelScope.launch {
+            isLoadingMoreComments = true
+            try {
+                val nextPage = currentCommentsPage + 1
+                val newComments = commentRepository.getComments(postId, page = nextPage, limit = commentsPageSize)
+                if (newComments.isNotEmpty()) {
+                    uiState = currentSuccessState.copy(comments = currentSuccessState.comments + newComments)
+                    currentCommentsPage = nextPage
+                    
+                    // Auto-load replies for new comments
+                    newComments.forEach { comment ->
+                        if (comment.repliesCount > 0) {
+                            loadRepliesForComment(comment.commentId)
+                        }
+                    }
+                }
+                if (newComments.size < commentsPageSize) {
+                    isLastCommentsPage = true
+                }
+            } catch (_: Exception) {
+                // Fail silently when loading more comments
+            } finally {
+                isLoadingMoreComments = false
             }
         }
     }
