@@ -7,6 +7,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,6 +25,7 @@ import com.unired.data.model.Post
 import com.unired.R
 import com.unired.data.api.ApiClient
 import com.unired.ui.components.AvatarImage
+import com.unired.ui.components.FullScreenImageViewer
 import com.unired.ui.components.LikeButton
 import com.unired.ui.theme.UniRedBackground
 import com.unired.util.DateFormatter
@@ -35,6 +40,7 @@ fun PostCard(
     modifier: Modifier = Modifier
 ) {
     val serverUrl = ApiClient.BASE_URL.substringBefore("/api/")
+    var isImageViewerOpen by remember { mutableStateOf(false) }
 
     Card(
         modifier = modifier
@@ -90,11 +96,19 @@ fun PostCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 250.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { isImageViewerOpen = true },
                     contentScale = ContentScale.Crop
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
+
+                if (isImageViewerOpen) {
+                    FullScreenImageViewer(
+                        imageUrl = fullUrl,
+                        onDismiss = { isImageViewerOpen = false }
+                    )
+                }
             }
 
             Text(

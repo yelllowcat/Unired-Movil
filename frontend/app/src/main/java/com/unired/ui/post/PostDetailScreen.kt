@@ -47,6 +47,7 @@ import com.unired.data.api.ApiClient
 import com.unired.data.model.Comment
 import com.unired.data.model.Reply
 import com.unired.ui.components.AvatarImage
+import com.unired.ui.components.FullScreenImageViewer
 import com.unired.ui.components.LikeButton
 import com.unired.ui.components.LoadingIndicator
 import com.unired.util.DateFormatter
@@ -69,6 +70,7 @@ fun PostDetailScreen(
     val uiState = viewModel.uiState
     var commentText by remember { mutableStateOf(CommentDraftManager.getDraft(postId)) }
     var activeReplyingComment by remember { mutableStateOf<Comment?>(null) }
+    var isImageViewerOpen by remember { mutableStateOf(false) }
     val serverUrl = ApiClient.BASE_URL.substringBefore("/api/")
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -330,10 +332,18 @@ fun PostDetailScreen(
                                             contentDescription = "Imagen de publicación",
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .heightIn(max = 300.dp),
+                                                .heightIn(max = 300.dp)
+                                                .clickable { isImageViewerOpen = true },
                                             contentScale = ContentScale.FillWidth
                                         )
                                         Spacer(modifier = Modifier.height(12.dp))
+
+                                        if (isImageViewerOpen) {
+                                            FullScreenImageViewer(
+                                                imageUrl = fullUrl,
+                                                onDismiss = { isImageViewerOpen = false }
+                                            )
+                                        }
                                     }
 
                                     // Content text below image
