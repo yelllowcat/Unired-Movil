@@ -7,116 +7,120 @@ datasource db {
 }
 
 model User {
-  userId            Int       @id @default(autoincrement()) @map("user_id")
-  fullName          String    @map("full_name") @db.VarChar(100)
-  biography         String?   @db.Text
-  profilePicture    String?   @default("default_avatar.png") @map("profile_picture") @db.VarChar(255)
-  email             String    @unique @db.VarChar(100)
-  password          String    @db.VarChar(255)
-  registrationDate  DateTime  @default(now()) @map("registration_date")
-  role              String    @default("user") @db.VarChar(20)
-  active            Boolean   @default(true)
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  posts             Post[]
-  comments          Comment[]
-  likes             Like[]
-  commentLikes      CommentLike[]
-  replies           Reply[]
-  hiddenComments    HiddenComment[]
-  sentRequests      FriendRequest[]  @relation("Sender")
-  receivedRequests  FriendRequest[]  @relation("Receiver")
-  friendsAsUser1    Friend[]         @relation("FriendUser1")
-  friendsAsUser2    Friend[]         @relation("FriendUser2")
-  updateLogs        UserUpdateLog[]
+  userId           Int             @id @default(autoincrement()) @map("user_id")
+  fullName         String          @map("full_name") @db.VarChar(100)
+  biography        String?         @db.Text
+  profilePicture   String?         @default("default_avatar.png") @map("profile_picture") @db.VarChar(255)
+  email            String          @unique(map: "email") @db.VarChar(100)
+  password         String          @db.VarChar(255)
+  registrationDate DateTime?       @default(now()) @map("registration_date") @db.DateTime(0)
+  role             String?         @default("user") @db.VarChar(20)
+  active           Boolean?        @default(true)
+  updatedAt        DateTime?       @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+  commentLikes     CommentLike[]
+  comments         Comment[]
+  sentRequests     FriendRequest[] @relation("Sender")
+  receivedRequests FriendRequest[] @relation("Receiver")
+  friendsAsUser1   Friend[]        @relation("FriendUser1")
+  friendsAsUser2   Friend[]        @relation("FriendUser2")
+  hiddenComments   HiddenComment[]
+  likes            Like[]
+  posts            Post[]
+  replies          Reply[]
+  reply_likes      reply_likes[]
+  updateLogs       UserUpdateLog[]
+  notifications    Notification[]  @relation("UserNotifications")
+  sentNotifications Notification[] @relation("SenderNotifications")
 
   @@map("users")
 }
 
 model Post {
-  postId     Int       @id @default(autoincrement()) @map("post_id")
-  userId     Int       @map("user_id")
-  content    String    @db.Text
-  image      String?   @db.VarChar(255)
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @default(now()) @map("updated_at")
-  active     Boolean   @default(true)
+  postId    Int       @id @default(autoincrement()) @map("post_id")
+  userId    Int       @map("user_id")
+  content   String    @db.Text
+  image     String?   @db.VarChar(255)
+  createdAt DateTime? @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.DateTime(0)
+  active    Boolean?  @default(true)
+  comments  Comment[]
+  likes     Like[]
+  user      User      @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "posts_ibfk_1")
 
-  user       User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  comments   Comment[]
-  likes      Like[]
-
+  @@index([userId], map: "user_id")
   @@map("posts")
 }
 
 model Comment {
-  commentId  Int       @id @default(autoincrement()) @map("comment_id")
-  postId     Int       @map("post_id")
-  userId     Int       @map("user_id")
-  content    String    @db.Text
-  createdAt  DateTime  @default(now()) @map("created_at")
-  active     Boolean   @default(true)
+  commentId Int             @id @default(autoincrement()) @map("comment_id")
+  postId    Int             @map("post_id")
+  userId    Int             @map("user_id")
+  content   String          @db.Text
+  createdAt DateTime?       @default(now()) @map("created_at") @db.DateTime(0)
+  active    Boolean?        @default(true)
+  likes     CommentLike[]
+  post      Post            @relation(fields: [postId], references: [postId], onDelete: Cascade, onUpdate: NoAction, map: "comments_ibfk_1")
+  user      User            @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "comments_ibfk_2")
+  hiddenBy  HiddenComment[]
+  replies   Reply[]
 
-  post           Post            @relation(fields: [postId], references: [postId], onDelete: Cascade)
-  user           User            @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  likes          CommentLike[]
-  replies        Reply[]
-  hiddenBy       HiddenComment[]
-
+  @@index([postId], map: "post_id")
+  @@index([userId], map: "user_id")
   @@map("comments")
 }
 
 model HiddenComment {
-  hiddenId   Int       @id @default(autoincrement()) @map("hidden_id")
-  userId     Int       @map("user_id")
-  commentId  Int       @map("comment_id")
-  hiddenAt   DateTime  @default(now()) @map("hidden_at")
+  hiddenId  Int       @id @default(autoincrement()) @map("hidden_id")
+  userId    Int       @map("user_id")
+  commentId Int       @map("comment_id")
+  hiddenAt  DateTime? @default(now()) @map("hidden_at") @db.DateTime(0)
+  user      User      @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "hidden_comments_ibfk_1")
+  comment   Comment   @relation(fields: [commentId], references: [commentId], onDelete: Cascade, onUpdate: NoAction, map: "hidden_comments_ibfk_2")
 
-  user       User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  comment    Comment   @relation(fields: [commentId], references: [commentId], onDelete: Cascade)
-
-  @@unique([userId, commentId])
+  @@unique([userId, commentId], map: "user_id")
+  @@index([commentId], map: "comment_id")
   @@map("hidden_comments")
 }
 
 model Like {
-  likeId   Int       @id @default(autoincrement()) @map("like_id")
-  postId   Int       @map("post_id")
-  userId   Int       @map("user_id")
-  likedAt  DateTime  @default(now()) @map("liked_at")
+  likeId  Int       @id @default(autoincrement()) @map("like_id")
+  postId  Int       @map("post_id")
+  userId  Int       @map("user_id")
+  likedAt DateTime? @default(now()) @map("liked_at") @db.DateTime(0)
+  post    Post      @relation(fields: [postId], references: [postId], onDelete: Cascade, onUpdate: NoAction, map: "likes_ibfk_1")
+  user    User      @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "likes_ibfk_2")
 
-  post     Post      @relation(fields: [postId], references: [postId], onDelete: Cascade)
-  user     User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
-
-  @@unique([postId, userId])
+  @@unique([postId, userId], map: "post_id")
+  @@index([userId], map: "user_id")
   @@map("likes")
 }
 
 model CommentLike {
-  likeId     Int       @id @default(autoincrement()) @map("like_id")
-  commentId  Int       @map("comment_id")
-  userId     Int       @map("user_id")
-  likedAt    DateTime  @default(now()) @map("liked_at")
+  likeId    Int       @id @default(autoincrement()) @map("like_id")
+  commentId Int       @map("comment_id")
+  userId    Int       @map("user_id")
+  likedAt   DateTime? @default(now()) @map("liked_at") @db.DateTime(0)
+  comment   Comment   @relation(fields: [commentId], references: [commentId], onDelete: Cascade, onUpdate: NoAction, map: "comment_likes_ibfk_1")
+  user      User      @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "comment_likes_ibfk_2")
 
-  comment    Comment   @relation(fields: [commentId], references: [commentId], onDelete: Cascade)
-  user       User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
-
-  @@unique([commentId, userId])
+  @@unique([commentId, userId], map: "comment_id")
+  @@index([userId], map: "user_id")
   @@map("comment_likes")
 }
 
 model Reply {
-  replyId    Int       @id @default(autoincrement()) @map("reply_id")
-  commentId  Int       @map("comment_id")
-  userId     Int       @map("user_id")
-  content    String    @db.Text
-  createdAt  DateTime  @default(now()) @map("created_at")
-  active     Boolean   @default(true)
+  replyId     Int           @id @default(autoincrement()) @map("reply_id")
+  commentId   Int           @map("comment_id")
+  userId      Int           @map("user_id")
+  content     String        @db.Text
+  createdAt   DateTime?     @default(now()) @map("created_at") @db.DateTime(0)
+  active      Boolean?      @default(true)
+  comment     Comment       @relation(fields: [commentId], references: [commentId], onDelete: Cascade, onUpdate: NoAction, map: "replies_ibfk_1")
+  user        User          @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "replies_ibfk_2")
+  reply_likes reply_likes[]
 
-  comment    Comment   @relation(fields: [commentId], references: [commentId], onDelete: Cascade)
-  user       User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
-
+  @@index([commentId], map: "comment_id")
+  @@index([userId], map: "user_id")
   @@map("replies")
 }
 
@@ -124,13 +128,14 @@ model FriendRequest {
   requestId    Int       @id @default(autoincrement()) @map("request_id")
   senderId     Int       @map("sender_id")
   receiverId   Int       @map("receiver_id")
-  status       String    @default("pending") @db.VarChar(20)
-  requestDate  DateTime  @default(now()) @map("request_date")
-  responseDate DateTime? @map("response_date")
+  status       String?   @default("pending") @db.VarChar(20)
+  requestDate  DateTime? @default(now()) @map("request_date") @db.DateTime(0)
+  responseDate DateTime? @map("response_date") @db.DateTime(0)
+  sender       User      @relation("Sender", fields: [senderId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "friend_requests_ibfk_1")
+  receiver     User      @relation("Receiver", fields: [receiverId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "friend_requests_ibfk_2")
 
-  sender       User      @relation("Sender", fields: [senderId], references: [userId], onDelete: Cascade)
-  receiver     User      @relation("Receiver", fields: [receiverId], references: [userId], onDelete: Cascade)
-
+  @@index([receiverId], map: "receiver_id")
+  @@index([senderId], map: "sender_id")
   @@map("friend_requests")
 }
 
@@ -138,25 +143,56 @@ model Friend {
   friendshipId   Int       @id @default(autoincrement()) @map("friendship_id")
   userId1        Int       @map("user_id1")
   userId2        Int       @map("user_id2")
-  friendshipDate DateTime  @default(now()) @map("friendship_date")
+  friendshipDate DateTime? @default(now()) @map("friendship_date") @db.DateTime(0)
+  user1          User      @relation("FriendUser1", fields: [userId1], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "friends_ibfk_1")
+  user2          User      @relation("FriendUser2", fields: [userId2], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "friends_ibfk_2")
 
-  user1          User      @relation("FriendUser1", fields: [userId1], references: [userId], onDelete: Cascade)
-  user2          User      @relation("FriendUser2", fields: [userId2], references: [userId], onDelete: Cascade)
-
-  @@unique([userId1, userId2])
+  @@unique([userId1, userId2], map: "user_id1")
+  @@index([userId2], map: "user_id2")
   @@map("friends")
 }
 
 model UserUpdateLog {
-  logId       Int       @id @default(autoincrement()) @map("log_id")
-  userId      Int       @map("user_id")
-  oldFullName String?   @map("old_full_name") @db.VarChar(100)
-  newFullName String?   @map("new_full_name") @db.VarChar(100)
-  oldBiography String?  @map("old_biography") @db.Text
-  newBiography String?  @map("new_biography") @db.Text
-  changeDate  DateTime  @default(now()) @map("change_date")
+  logId        Int       @id @default(autoincrement()) @map("log_id")
+  userId       Int       @map("user_id")
+  oldFullName  String?   @map("old_full_name") @db.VarChar(100)
+  newFullName  String?   @map("new_full_name") @db.VarChar(100)
+  oldBiography String?   @map("old_biography") @db.Text
+  newBiography String?   @map("new_biography") @db.Text
+  changeDate   DateTime? @default(now()) @map("change_date") @db.DateTime(0)
+  user         User      @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "user_update_log_ibfk_1")
 
-  user        User      @relation(fields: [userId], references: [userId])
-
+  @@index([userId], map: "user_id")
   @@map("user_update_log")
+}
+
+model reply_likes {
+  like_id  Int       @id @default(autoincrement())
+  reply_id Int
+  user_id  Int
+  liked_at DateTime? @default(now()) @db.DateTime(0)
+  replies  Reply     @relation(fields: [reply_id], references: [replyId], onDelete: Cascade, onUpdate: NoAction, map: "reply_likes_ibfk_1")
+  users    User      @relation(fields: [user_id], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "reply_likes_ibfk_2")
+
+  @@unique([reply_id, user_id], map: "reply_id")
+  @@index([user_id], map: "user_id")
+}
+
+model Notification {
+  notificationId Int       @id @default(autoincrement()) @map("notification_id")
+  userId         Int       @map("user_id")
+  senderId       Int       @map("sender_id")
+  type           String    @db.VarChar(20)
+  postId         Int?      @map("post_id")
+  commentId      Int?      @map("comment_id")
+  replyId        Int?      @map("reply_id")
+  isRead         Boolean   @default(false) @map("is_read")
+  createdAt      DateTime? @default(now()) @map("created_at") @db.DateTime(0)
+  
+  user           User      @relation("UserNotifications", fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "notifications_ibfk_1")
+  sender         User      @relation("SenderNotifications", fields: [senderId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "notifications_ibfk_2")
+
+  @@index([userId], map: "user_id")
+  @@index([senderId], map: "sender_id")
+  @@map("notifications")
 }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +31,7 @@ import com.unired.ui.components.LoadingIndicator
 import com.unired.ui.navigation.Screen
 import com.unired.util.DateFormatter
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendsScreen(
     onNavigateToProfile: (userId: Int) -> Unit,
@@ -47,140 +49,150 @@ fun FriendsScreen(
         Scaffold(
             containerColor = Color.Transparent
         ) { paddingValues ->
-            Column(
+            PullToRefreshBox(
+                isRefreshing = viewModel.isRefreshing,
+                onRefresh = { viewModel.refreshFriends() },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Header (User Profile Name & Buscador)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Text(
-                        text = viewModel.currentUserFullName,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-
-                    // Search input
+                    // Header (User Profile Name & Buscador)
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .background(Color.White, shape = RoundedCornerShape(20.dp))
-                            .border(1.dp, Color.LightGray.copy(alpha = 0.5f), shape = RoundedCornerShape(20.dp))
-                            .padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
-                            .width(180.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        BasicTextField(
-                            value = viewModel.searchQuery,
-                            onValueChange = { viewModel.onSearchQueryChange(it) },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            decorationBox = { innerTextField ->
-                                if (viewModel.searchQuery.isEmpty()) {
-                                    Text("Buscador", color = Color.Gray, fontSize = 14.sp)
-                                }
-                                innerTextField()
-                            }
+                        Text(
+                            text = viewModel.currentUserFullName,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
                         )
-                        Box(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .background(Color(0xFF33B5B5), shape = RoundedCornerShape(14.dp))
-                                .clickable { viewModel.performSearch() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Search",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
 
-                // Tabs Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    FriendsTab.values().forEach { tab ->
-                        val isSelected = viewModel.currentTab == tab
-                        val label = when (tab) {
-                            FriendsTab.SOLICITUDES -> "Solicitudes"
-                            FriendsTab.ENVIAR_SOLICITUD -> "Enviar solicitud"
-                            FriendsTab.PENDIENTES -> "Solicitudes pendientes"
-                        }
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.clickable { viewModel.onTabChange(tab) }
+                        // Search input
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .background(Color.White, shape = RoundedCornerShape(20.dp))
+                                .border(1.dp, Color.LightGray.copy(alpha = 0.5f), shape = RoundedCornerShape(20.dp))
+                                .padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
+                                .width(180.dp)
                         ) {
-                            Text(
-                                text = label,
-                                color = if (isSelected) Color.Black else Color.Gray,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 13.sp
+                            BasicTextField(
+                                value = viewModel.searchQuery,
+                                onValueChange = { viewModel.onSearchQueryChange(it) },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                decorationBox = { innerTextField ->
+                                    if (viewModel.searchQuery.isEmpty()) {
+                                        Text("Buscador", color = Color.Gray, fontSize = 14.sp)
+                                    }
+                                    innerTextField()
+                                }
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
                             Box(
                                 modifier = Modifier
-                                    .height(2.dp)
-                                    .width(if (isSelected) 60.dp else 0.dp)
-                                    .background(Color(0xFF33B5B5))
-                            )
+                                    .size(28.dp)
+                                    .background(Color(0xFF33B5B5), shape = RoundedCornerShape(14.dp))
+                                    .clickable { viewModel.performSearch() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Search",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Error Message if any
-                viewModel.errorMessage?.let { error ->
-                    Text(
-                        text = error,
-                        color = Color.Red,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                        fontSize = 14.sp
-                    )
-                }
-
-                // Content Area
-                Box(modifier = Modifier.weight(1f)) {
-                    if (viewModel.isLoading) {
-                        LoadingIndicator()
-                    } else {
-                        when (viewModel.currentTab) {
-                            FriendsTab.SOLICITUDES -> {
-                                RequestsList(
-                                    requests = viewModel.incomingRequests,
-                                    isIncoming = true,
-                                    onAccept = { viewModel.acceptRequest(it) },
-                                    onReject = { viewModel.rejectRequest(it) }
-                                )
+                    // Tabs Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        FriendsTab.values().forEach { tab ->
+                            val isSelected = viewModel.currentTab == tab
+                            val label = when (tab) {
+                                FriendsTab.SOLICITUDES -> "Solicitudes"
+                                FriendsTab.ENVIAR_SOLICITUD -> "Enviar solicitud"
+                                FriendsTab.PENDIENTES -> "Solicitudes pendientes"
                             }
-                            FriendsTab.ENVIAR_SOLICITUD -> {
-                                SearchResultsList(
-                                    users = viewModel.searchResults,
-                                    onNavigateToProfile = onNavigateToProfile,
-                                    onSendRequest = { viewModel.sendRequest(it) }
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.clickable { viewModel.onTabChange(tab) }
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (isSelected) Color.Black else Color.Gray,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 13.sp
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .height(2.dp)
+                                        .width(if (isSelected) 60.dp else 0.dp)
+                                        .background(Color(0xFF33B5B5))
+                                    )
                             }
-                            FriendsTab.PENDIENTES -> {
-                                RequestsList(
-                                    requests = viewModel.sentRequests,
-                                    isIncoming = false,
-                                    onAccept = {},
-                                    onReject = {},
-                                    onCancel = { viewModel.cancelRequest(it) }
-                                )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Error Message if any
+                    viewModel.errorMessage?.let { error ->
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    // Content Area
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (viewModel.isLoading && !viewModel.isRefreshing) {
+                            LoadingIndicator()
+                        } else {
+                            when (viewModel.currentTab) {
+                                FriendsTab.SOLICITUDES -> {
+                                    RequestsList(
+                                        requests = viewModel.incomingRequests,
+                                        isIncoming = true,
+                                        onAccept = { viewModel.acceptRequest(it) },
+                                        onReject = { viewModel.rejectRequest(it) }
+                                    )
+                                }
+                                FriendsTab.ENVIAR_SOLICITUD -> {
+                                    SearchResultsList(
+                                        users = viewModel.searchResults,
+                                        onNavigateToProfile = onNavigateToProfile,
+                                        onSendRequest = { viewModel.sendRequest(it) },
+                                        onAcceptRequest = { viewModel.acceptRequest(it) },
+                                        onRejectRequest = { viewModel.rejectRequest(it) },
+                                        onCancelRequest = { viewModel.cancelRequest(it) },
+                                        onRemoveFriend = { viewModel.removeFriend(it) }
+                                    )
+                                }
+                                FriendsTab.PENDIENTES -> {
+                                    RequestsList(
+                                        requests = viewModel.sentRequests,
+                                        isIncoming = false,
+                                        onAccept = {},
+                                        onReject = {},
+                                        onCancel = { viewModel.cancelRequest(it) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -277,7 +289,11 @@ fun RequestsList(
 fun SearchResultsList(
     users: List<UserPreview>,
     onNavigateToProfile: (userId: Int) -> Unit,
-    onSendRequest: (userId: Int) -> Unit
+    onSendRequest: (userId: Int) -> Unit,
+    onAcceptRequest: (requestId: Int) -> Unit,
+    onRejectRequest: (requestId: Int) -> Unit,
+    onCancelRequest: (requestId: Int) -> Unit,
+    onRemoveFriend: (userId: Int) -> Unit
 ) {
     if (users.isEmpty()) {
         Box(
@@ -308,27 +324,116 @@ fun SearchResultsList(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Button(
-                                onClick = { onNavigateToProfile(user.userId) },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier
-                                    .height(36.dp)
-                                    .weight(1f),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("Ver perfil", color = Color.White, fontSize = 12.sp)
-                            }
-                            Button(
-                                onClick = { onSendRequest(user.userId) },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0F2F1)),
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier
-                                    .height(36.dp)
-                                    .weight(1f),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("Agregar", color = Color(0xFF00796B), fontSize = 12.sp)
+                            when (user.friendshipStatus) {
+                                "me" -> {
+                                    Button(
+                                        onClick = { onNavigateToProfile(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .fillMaxWidth(),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Ver mi perfil", color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+                                "friends" -> {
+                                    Button(
+                                        onClick = { onNavigateToProfile(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Ver perfil", color = Color.White, fontSize = 12.sp)
+                                    }
+                                    Button(
+                                        onClick = { onRemoveFriend(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Eliminar", color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+                                "request_sent" -> {
+                                    Button(
+                                        onClick = { onNavigateToProfile(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Ver perfil", color = Color.White, fontSize = 12.sp)
+                                    }
+                                    Button(
+                                        onClick = { user.friendRequestId?.let { onCancelRequest(it) } },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Cancelar", color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+                                "request_received" -> {
+                                    Button(
+                                        onClick = { user.friendRequestId?.let { onRejectRequest(it) } },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Eliminar", color = Color.White, fontSize = 12.sp)
+                                    }
+                                    Button(
+                                        onClick = { user.friendRequestId?.let { onAcceptRequest(it) } },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Aceptar", color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+                                else -> { // none
+                                    Button(
+                                        onClick = { onNavigateToProfile(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Ver perfil", color = Color.White, fontSize = 12.sp)
+                                    }
+                                    Button(
+                                        onClick = { onSendRequest(user.userId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0F2F1)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .height(36.dp)
+                                            .weight(1f),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Agregar", color = Color(0xFF00796B), fontSize = 12.sp)
+                                    }
+                                }
                             }
                         }
                     }

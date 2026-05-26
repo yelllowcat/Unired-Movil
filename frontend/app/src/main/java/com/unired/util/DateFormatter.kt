@@ -35,4 +35,43 @@ object DateFormatter {
             }
         }
     }
+
+    fun formatRelativeTime(dateStr: String?): String {
+        if (dateStr.isNullOrBlank()) return "Ahora"
+        return try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+            val date = try {
+                inputFormat.parse(dateStr)
+            } catch (e: Exception) {
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }.parse(dateStr)
+            }
+
+            if (date != null) {
+                val diffMs = System.currentTimeMillis() - date.time
+                val diffSecs = diffMs / 1000
+                val diffMins = diffSecs / 60
+                val diffHours = diffMins / 60
+                val diffDays = diffHours / 24
+
+                when {
+                    diffMins < 1 -> "Ahora"
+                    diffMins < 60 -> "${diffMins} m"
+                    diffHours < 24 -> "${diffHours} h"
+                    diffDays < 7 -> "${diffDays} d"
+                    else -> {
+                        val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                        outputFormat.format(date)
+                    }
+                }
+            } else {
+                "Desconocido"
+            }
+        } catch (e: Exception) {
+            formatDateString(dateStr)
+        }
+    }
 }

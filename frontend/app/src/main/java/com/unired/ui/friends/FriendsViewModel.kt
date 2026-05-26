@@ -38,6 +38,9 @@ class FriendsViewModel(
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
+    var isRefreshing by mutableStateOf(false)
+        private set
+
     var incomingRequests by mutableStateOf<List<FriendRequest>>(emptyList())
         private set
 
@@ -127,14 +130,46 @@ class FriendsViewModel(
         }
     }
 
+    fun refreshFriends() {
+        viewModelScope.launch {
+            isRefreshing = true
+            errorMessage = null
+            try {
+                loadUserProfile()
+                when (currentTab) {
+                    FriendsTab.SOLICITUDES -> {
+                        incomingRequests = friendRepository.getPendingRequests()
+                    }
+                    FriendsTab.ENVIAR_SOLICITUD -> {
+                        if (searchQuery.isNotBlank()) {
+                            val results = userRepository.searchUsers(searchQuery)
+                            val currentUserId = SessionManager.getUserId()
+                            searchResults = results.filter { it.userId != currentUserId }
+                        }
+                    }
+                    FriendsTab.PENDIENTES -> {
+                        sentRequests = friendRepository.getSentRequests()
+                    }
+                }
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Error al actualizar información"
+            } finally {
+                isRefreshing = false
+            }
+        }
+    }
+
+    private fun refreshCurrentTab() {
+        loadTabContent(currentTab)
+    }
+
     fun sendRequest(receiverId: Int) {
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             try {
                 friendRepository.sendRequest(receiverId)
-                // Refresh to show that the request was sent
-                loadTabContent(currentTab)
+                refreshCurrentTab()
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al enviar la solicitud"
             } finally {
@@ -149,7 +184,7 @@ class FriendsViewModel(
             errorMessage = null
             try {
                 friendRepository.respondToRequest(requestId, "accepted")
-                loadTabContent(FriendsTab.SOLICITUDES)
+                refreshCurrentTab()
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al aceptar la solicitud"
             } finally {
@@ -164,7 +199,7 @@ class FriendsViewModel(
             errorMessage = null
             try {
                 friendRepository.respondToRequest(requestId, "rejected")
-                loadTabContent(FriendsTab.SOLICITUDES)
+                refreshCurrentTab()
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al rechazar la solicitud"
             } finally {
@@ -179,9 +214,24 @@ class FriendsViewModel(
             errorMessage = null
             try {
                 friendRepository.cancelRequest(requestId)
-                loadTabContent(FriendsTab.PENDIENTES)
+                refreshCurrentTab()
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al cancelar la solicitud"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun removeFriend(userId: Int) {
+        viewModelScope.launch {
+            isLoading = true
+            errorMessage = null
+            try {
+                friendRepository.removeFriend(userId)
+                refreshCurrentTab()
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Error al eliminar amigo"
             } finally {
                 isLoading = false
             }

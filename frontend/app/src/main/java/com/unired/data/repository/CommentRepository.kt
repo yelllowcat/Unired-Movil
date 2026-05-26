@@ -9,8 +9,8 @@ import com.unired.data.model.response.LikeResult
 class CommentRepository(
         private val api: CommentApi = ApiClient.retrofit.create(CommentApi::class.java)
 ) {
-    suspend fun getComments(postId: Int): List<Comment> {
-        return safeApiCall { api.getComments(postId) }
+    suspend fun getComments(postId: Int, page: Int = 1, limit: Int = 10): List<Comment> {
+        return safeApiCall { api.getComments(postId, page, limit) }
     }
 
     suspend fun addComment(postId: Int, content: String): Comment {

@@ -9,5 +9,6 @@ data class Comment(
     val fullName: String,
     val profilePicture: String,
     val likesCount: Int = 0,      // from comment_likes
-    val repliesCount: Int = 0
+    val repliesCount: Int = 0,
+    val hasLiked: Boolean = false
 )

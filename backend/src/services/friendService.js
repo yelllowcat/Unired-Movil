@@ -1,5 +1,6 @@
 import prisma from "../utils/prisma.js";
 import ApiError from "../utils/ApiError.js";
+import notificationService from "./notificationService.js";
 
 const sendFriendRequest = async (senderId, receiverId) => {
   if (senderId === receiverId) {
@@ -44,6 +45,8 @@ const sendFriendRequest = async (senderId, receiverId) => {
     data: { senderId, receiverId },
   });
 
+  await notificationService.createNotification(receiverId, senderId, "friend_request");
+
   return request;
 };
 
@@ -76,6 +79,8 @@ const respondToRequest = async (requestId, userId, status) => {
     await prisma.friend.create({
       data: { userId1: user1, userId2: user2 },
     });
+
+    await notificationService.createNotification(request.senderId, userId, "friend_accept");
   }
 
   return { success: true, status };

@@ -10,5 +10,6 @@ router.get("/", replyController.getReplies);
 router.post("/", replyController.createReply);
 
 router.delete("/:id", replyController.deleteReply);
+router.post("/:id/like", replyController.toggleReplyLike);
 
 export default router;

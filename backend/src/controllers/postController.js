@@ -6,7 +6,7 @@ const getFeed = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 20;
 
-  const feed = await postService.getFeed(page, limit);
+  const feed = await postService.getFeed(req.user.userId, page, limit);
   res.status(200).json({ success: true, data: feed });
 });
 
@@ -14,7 +14,7 @@ const getPost = asyncHandler(async (req, res) => {
   const postId = parseInt(req.params.id, 10);
   if (isNaN(postId)) throw new ApiError(400, 'ID de publicación inválido');
 
-  const post = await postService.getPostById(postId);
+  const post = await postService.getPostById(postId, req.user.userId);
   res.status(200).json({ success: true, data: post });
 });
 

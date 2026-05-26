@@ -1,7 +1,10 @@
 import prisma from "../utils/prisma.js";
 import ApiError from "../utils/ApiError.js";
+import notificationService from "./notificationService.js";
 
-const getCommentsByPost = async (postId) => {
+const getCommentsByPost = async (postId, currentUserId, page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
   const comments = await prisma.comment.findMany({
     where: { postId, active: true },
     include: {
@@ -12,6 +15,10 @@ const getCommentsByPost = async (postId) => {
           profilePicture: true,
         },
       },
+      likes: {
+        where: { userId: currentUserId },
+        select: { likeId: true },
+      },
       _count: {
         select: {
           likes: true,
@@ -20,6 +27,8 @@ const getCommentsByPost = async (postId) => {
       },
     },
     orderBy: { createdAt: "asc" },
+    skip,
+    take: limit,
   });
 
   return comments.map((comment) => ({
@@ -32,6 +41,7 @@ const getCommentsByPost = async (postId) => {
     profilePicture: comment.user.profilePicture,
     likesCount: comment._count.likes,
     repliesCount: comment._count.replies,
+    hasLiked: comment.likes ? comment.likes.length > 0 : false,
   }));
 };
 
@@ -47,9 +57,31 @@ const createComment = async (postId, userId, content) => {
       userId,
       content,
     },
+    include: {
+      user: {
+        select: {
+          userId: true,
+          fullName: true,
+          profilePicture: true,
+        },
+      },
+    },
   });
 
-  return comment;
+  await notificationService.createNotification(post.userId, userId, "comment", postId, comment.commentId);
+
+  return {
+    commentId: comment.commentId,
+    postId: comment.postId,
+    userId: comment.userId,
+    content: comment.content,
+    createdAt: comment.createdAt,
+    fullName: comment.user.fullName,
+    profilePicture: comment.user.profilePicture,
+    likesCount: 0,
+    repliesCount: 0,
+    hasLiked: false,
+  };
 };
 
 const deleteComment = async (commentId, userId) => {
@@ -90,6 +122,7 @@ const toggleCommentLike = async (commentId, userId) => {
     await prisma.commentLike.create({
       data: { commentId, userId },
     });
+    await notificationService.createNotification(comment.userId, userId, "comment_like", comment.postId, commentId);
     return { liked: true };
   }
 };
