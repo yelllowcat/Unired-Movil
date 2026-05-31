@@ -24,6 +24,9 @@ COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/prisma ./prisma
 COPY --from=builder /usr/src/app/src ./src
 
+# Create uploads directory so multer can write files
+RUN mkdir -p /usr/src/app/uploads
+
 EXPOSE 3000
 
 ENV PORT=3000
