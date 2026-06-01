@@ -36,8 +36,8 @@ class PostRepository(private val api: PostApi = ApiClient.retrofit.create(PostAp
         }
     }
 
-    suspend fun updatePost(postId: Int, content: String): Post {
-        return safeApiCall { api.updatePost(postId, CreatePostRequest(content)) }
+    suspend fun updatePost(postId: Int, content: String, removeImage: Boolean = false): Post {
+        return safeApiCall { api.updatePost(postId, CreatePostRequest(content, removeImage)) }
     }
 
     suspend fun deletePost(postId: Int) {

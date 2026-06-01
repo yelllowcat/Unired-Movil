@@ -26,6 +26,8 @@ class CreatePostViewModel(
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
+    private var hadImageInitially = false
+
     var authorName by mutableStateOf("Cargando...")
     var authorPicture by mutableStateOf<String?>(null)
 
@@ -75,6 +77,7 @@ class CreatePostViewModel(
                     val post = postRepository.getPost(postId)
                     postContent = post.content
                     existingImageUrl = post.image
+                    hadImageInitially = post.image != null
                 } catch (e: Exception) {
                     errorMessage = "Error al cargar la publicación para editar"
                 }
@@ -117,7 +120,8 @@ class CreatePostViewModel(
             isUploading = true
             errorMessage = null
             try {
-                postRepository.updatePost(postId, postContent.trim())
+                val removeImage = hadImageInitially && existingImageUrl == null && selectedImageUri == null
+                postRepository.updatePost(postId, postContent.trim(), removeImage)
                 isUploading = false
                 onSuccess()
             } catch (e: Exception) {

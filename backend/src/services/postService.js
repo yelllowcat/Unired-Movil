@@ -102,7 +102,7 @@ const createPost = async (userId, content, imagePath) => {
   return post;
 };
 
-const updatePost = async (postId, userId, content) => {
+const updatePost = async (postId, userId, content, removeImage = false) => {
   const post = await prisma.post.findUnique({
     where: { postId, active: true },
   });
@@ -111,9 +111,14 @@ const updatePost = async (postId, userId, content) => {
   if (post.userId !== userId)
     throw new ApiError(403, "No tienes permiso para editar esta publicación");
 
+  const updateData = { content, updatedAt: new Date() };
+  if (removeImage) {
+    updateData.image = null;
+  }
+
   const updatedPost = await prisma.post.update({
     where: { postId },
-    data: { content, updatedAt: new Date() },
+    data: updateData,
   });
 
   return updatedPost;
