@@ -82,10 +82,6 @@ class FriendsViewModel(
     }
 
     fun performSearch() {
-        if (searchQuery.isBlank()) {
-            searchResults = emptyList()
-            return
-        }
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
@@ -112,11 +108,7 @@ class FriendsViewModel(
                         incomingRequests = friendRepository.getPendingRequests()
                     }
                     FriendsTab.ENVIAR_SOLICITUD -> {
-                        if (searchQuery.isNotBlank()) {
-                            performSearch()
-                        } else {
-                            searchResults = emptyList()
-                        }
+                        performSearch()
                     }
                     FriendsTab.PENDIENTES -> {
                         sentRequests = friendRepository.getSentRequests()
@@ -141,11 +133,9 @@ class FriendsViewModel(
                         incomingRequests = friendRepository.getPendingRequests()
                     }
                     FriendsTab.ENVIAR_SOLICITUD -> {
-                        if (searchQuery.isNotBlank()) {
-                            val results = userRepository.searchUsers(searchQuery)
-                            val currentUserId = SessionManager.getUserId()
-                            searchResults = results.filter { it.userId != currentUserId }
-                        }
+                        val results = userRepository.searchUsers(searchQuery)
+                        val currentUserId = SessionManager.getUserId()
+                        searchResults = results.filter { it.userId != currentUserId }
                     }
                     FriendsTab.PENDIENTES -> {
                         sentRequests = friendRepository.getSentRequests()

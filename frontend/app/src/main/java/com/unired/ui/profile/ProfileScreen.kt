@@ -13,8 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.unired.R
 import com.unired.ui.components.AvatarImage
 import com.unired.ui.components.LoadingIndicator
@@ -52,6 +52,7 @@ fun ProfileScreen(
     )
 ) {
     val uiState = viewModel.uiState
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Geometric Background
@@ -108,8 +109,7 @@ fun ProfileScreen(
                             Spacer(modifier = Modifier.height(12.dp))
                             Button(
                                 onClick = {
-                                    SessionManager.clearSession()
-                                    onLogout()
+                                    showLogoutDialog = true
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color(0xFFC62828)
@@ -147,8 +147,7 @@ fun ProfileScreen(
                                                 .shadow(2.dp, shape = RoundedCornerShape(12.dp))
                                                 .background(Color.White, shape = RoundedCornerShape(12.dp))
                                                 .clickable {
-                                                    SessionManager.clearSession()
-                                                    onLogout()
+                                                    showLogoutDialog = true
                                                 },
                                             contentAlignment = Alignment.Center
                                         ) {
@@ -353,6 +352,62 @@ fun ProfileScreen(
                 }
             }
         }
+
+        if (showLogoutDialog) {
+            Dialog(onDismissRequest = { showLogoutDialog = false }) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F6F9)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp, horizontal = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Cerrar sesión",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.Black,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "¿Estás seguro de que deseas cerrar sesión?",
+                                fontSize = 13.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp)
+                        DialogActionRow(
+                            text = "Cerrar sesión",
+                            textColor = Color(0xFFC62828),
+                            onClick = {
+                                showLogoutDialog = false
+                                SessionManager.clearSession()
+                                onLogout()
+                            }
+                        )
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp)
+                        DialogActionRow(
+                            text = "Cancelar",
+                            textColor = Color.Black,
+                            onClick = { showLogoutDialog = false }
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 }
@@ -372,6 +427,28 @@ private fun StatColumn(value: String, label: String) {
             text = label,
             fontSize = 13.sp,
             color = Color.Gray
+        )
+    }
+}
+
+@Composable
+private fun DialogActionRow(
+    text: String,
+    textColor: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontWeight = FontWeight.Medium,
+            fontSize = 16.sp
         )
     }
 }

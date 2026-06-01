@@ -150,24 +150,78 @@ const getUserPosts = async (userId, page = 1, limit = 20) => {
 };
 
 const searchUsers = async (query, currentUserId, limit = 20) => {
-  if (!query) return [];
+  let users;
+  const currentUserIdInt = currentUserId ? parseInt(currentUserId, 10) : null;
 
-  const users = await prisma.user.findMany({
-    where: {
-      fullName: {
-        contains: query,
+  if (!query) {
+    const friendIds = [];
+    const pendingUserIds = [];
+    if (currentUserIdInt) {
+      // Find all friends
+      const friends = await prisma.friend.findMany({
+        where: {
+          OR: [
+            { userId1: currentUserIdInt },
+            { userId2: currentUserIdInt }
+          ]
+        }
+      });
+      friends.forEach(f => {
+        friendIds.push(f.userId1 === currentUserIdInt ? f.userId2 : f.userId1);
+      });
+
+      // Find pending requests
+      const pendingRequests = await prisma.friendRequest.findMany({
+        where: {
+          status: "pending",
+          OR: [
+            { senderId: currentUserIdInt },
+            { receiverId: currentUserIdInt }
+          ]
+        }
+      });
+      pendingRequests.forEach(r => {
+        pendingUserIds.push(r.senderId === currentUserIdInt ? r.receiverId : r.senderId);
+      });
+    }
+
+    const excludedIds = [currentUserIdInt, ...friendIds, ...pendingUserIds].filter(id => id !== null && id !== undefined);
+
+    users = await prisma.user.findMany({
+      where: {
+        active: true,
+        userId: {
+          notIn: excludedIds
+        }
       },
-      active: true,
-    },
-    select: {
-      userId: true,
-      fullName: true,
-      profilePicture: true,
-      biography: true,
-      registrationDate: true,
-    },
-    take: limit,
-  });
+      select: {
+        userId: true,
+        fullName: true,
+        profilePicture: true,
+        biography: true,
+        registrationDate: true,
+      },
+      take: limit,
+    });
+    users.sort(() => Math.random() - 0.5);
+  } else {
+    users = await prisma.user.findMany({
+      where: {
+        fullName: {
+          contains: query,
+        },
+        active: true,
+      },
+      select: {
+        userId: true,
+        fullName: true,
+        profilePicture: true,
+        biography: true,
+        registrationDate: true,
+      },
+      take: limit,
+    });
+  }
 
   if (!currentUserId) {
     return users.map(u => ({
