@@ -256,7 +256,7 @@ fun EditProfileScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 Text(
-                                    text = "${biography.length}/150",
+                                    text = "${biography.length}/200",
                                     fontSize = 12.sp,
                                     color = Color.Gray,
                                     modifier = Modifier.fillMaxWidth(),
@@ -278,29 +278,14 @@ fun EditProfileScreen(
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        // Action Buttons Row (Eliminar cuenta & Guardar cambios)
-                        Row(
+                        // Action Buttons Column (Responsive stacked buttons)
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 32.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Button(
-                                onClick = { showDeleteDialog = true },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
-                                shape = RoundedCornerShape(24.dp)
-                            ) {
-                                Text(
-                                    text = "Eliminar cuenta",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
-                                )
-                            }
-
                             Button(
                                 onClick = {
                                     viewModel.updateProfile(context) {
@@ -308,7 +293,7 @@ fun EditProfileScreen(
                                     }
                                 },
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .fillMaxWidth()
                                     .height(48.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)),
                                 shape = RoundedCornerShape(24.dp),
@@ -316,6 +301,22 @@ fun EditProfileScreen(
                             ) {
                                 Text(
                                     text = "Guardar cambios",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+
+                            Button(
+                                onClick = { showDeleteDialog = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                shape = RoundedCornerShape(24.dp)
+                            ) {
+                                Text(
+                                    text = "Eliminar cuenta",
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp

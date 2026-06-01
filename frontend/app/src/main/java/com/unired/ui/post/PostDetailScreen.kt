@@ -164,8 +164,10 @@ fun PostDetailScreen(
                                 TextField(
                                     value = commentText,
                                     onValueChange = { 
-                                        commentText = it
-                                        CommentDraftManager.saveDraft(postId, it)
+                                        if (it.length <= 200) {
+                                            commentText = it
+                                            CommentDraftManager.saveDraft(postId, it)
+                                        }
                                     },
                                     placeholder = { Text(if (activeReplyingComment != null) "Responder" else "Comentar", color = Color.Gray) },
                                     modifier = Modifier
@@ -310,7 +312,8 @@ fun PostDetailScreen(
                                                 text = post.authorName,
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 15.sp,
-                                                color = Color.Black
+                                                color = Color.Black,
+                                                modifier = Modifier.clickable { onNavigateToProfile(post.userId) }
                                             )
                                             Text(
                                                 text = "Publicado el: " + DateFormatter.formatDateString(post.createdAt),
@@ -518,6 +521,7 @@ fun PostDetailScreen(
                                         onDeleteReplyClick = { reply ->
                                             viewModel.deleteReply(comment.commentId, reply.replyId)
                                         },
+                                        onProfileClick = onNavigateToProfile,
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                                     )
 

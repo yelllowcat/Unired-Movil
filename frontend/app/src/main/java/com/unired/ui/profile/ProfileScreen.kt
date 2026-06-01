@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -41,6 +42,7 @@ fun ProfileScreen(
     onNavigateToProfile: (Int) -> Unit,
     onLogout: () -> Unit,
     onEditProfileClick: () -> Unit,
+    onNavigateBack: () -> Unit,
     viewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         key = userId,
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
@@ -137,6 +139,27 @@ fun ProfileScreen(
                                         .fillMaxWidth()
                                         .padding(top = 16.dp)
                                 ) {
+                                    // Back button (at the top left when entering a profile)
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(top = 16.dp, start = 8.dp)
+                                            .size(48.dp)
+                                            .shadow(2.dp, shape = RoundedCornerShape(12.dp))
+                                            .background(Color.White, shape = RoundedCornerShape(12.dp))
+                                            .clickable {
+                                                onNavigateBack()
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Regresar",
+                                            tint = Color.Black,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+
                                     // Logout button (only if it's my own profile)
                                     if (isMe) {
                                         Box(

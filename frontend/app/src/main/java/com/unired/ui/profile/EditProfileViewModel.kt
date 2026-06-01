@@ -49,11 +49,13 @@ class EditProfileViewModel(
     }
 
     fun onNameChange(name: String) {
-        fullName = name
+        if (name.length <= 50) {
+            fullName = name
+        }
     }
 
     fun onBiographyChange(bio: String) {
-        if (bio.length <= 150) {
+        if (bio.length <= 200) {
             biography = bio
         }
     }
@@ -65,6 +67,22 @@ class EditProfileViewModel(
     fun updateProfile(context: Context, onSuccess: () -> Unit) {
         if (fullName.trim().isBlank()) {
             errorMessage = "El nombre completo no puede estar vacío"
+            return
+        }
+
+        val nameRegex = Regex("^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\\s]+$")
+        if (!nameRegex.matches(fullName)) {
+            errorMessage = "El nombre solo puede contener letras y espacios"
+            return
+        }
+
+        if (fullName.length > 50) {
+            errorMessage = "El nombre no puede exceder los 50 caracteres"
+            return
+        }
+
+        if (biography.length > 200) {
+            errorMessage = "La descripción no puede exceder los 200 caracteres"
             return
         }
 

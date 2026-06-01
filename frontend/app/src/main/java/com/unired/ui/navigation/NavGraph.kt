@@ -146,6 +146,9 @@ fun NavGraph(
                 },
                 onEditProfileClick = {
                     navController.navigate(Screen.EditProfile.route)
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }

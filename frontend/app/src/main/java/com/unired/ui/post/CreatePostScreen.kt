@@ -322,35 +322,14 @@ fun CreatePostScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Action Buttons Row (Figma: Eliminar publicación & Guardar cambios)
-                    Row(
+                    // Action Buttons Column (Responsive stacked buttons)
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 32.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Button(
-                            onClick = {
-                                if (postContent.isNotBlank() || selectedImageUri != null || viewModel.existingImageUrl != null) {
-                                    dialogState = CreatePostDialogState.CONFIRM_DISCARD
-                                } else {
-                                    onNavigateBack()
-                                }
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)), // Red
-                            shape = RoundedCornerShape(24.dp)
-                        ) {
-                            Text(
-                                text = "Eliminar publicación",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-
                         Button(
                             onClick = {
                                 if (postId != null) {
@@ -362,7 +341,7 @@ fun CreatePostScreen(
                                 }
                             },
                             modifier = Modifier
-                                .weight(1f)
+                                .fillMaxWidth()
                                 .height(48.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)), // Teal
                             shape = RoundedCornerShape(24.dp),
@@ -374,6 +353,28 @@ fun CreatePostScreen(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
+                        }
+
+                        Button(
+                            onClick = {
+                                if (postContent.isNotBlank() || selectedImageUri != null || viewModel.existingImageUrl != null) {
+                                    dialogState = CreatePostDialogState.CONFIRM_DISCARD
+                                } else {
+                                    onNavigateBack()
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)), // Red
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Text(
+                                text = "Eliminar publicación",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                              )
                         }
                     }
                 }
@@ -529,11 +530,23 @@ fun CreatePostDialog(
                         )
                     }
                     CreatePostDialogState.SUCCESS_PUBLISHED -> {
-                        DialogActionRow(
-                            text = "Publicado con éxito",
-                            textColor = Color.Black,
-                            onClick = onSuccessDismiss
-                        )
+                        LaunchedEffect(Unit) {
+                            kotlinx.coroutines.delay(1500)
+                            onSuccessDismiss()
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Publicado con éxito",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 16.sp
+                            )
+                        }
                     }
                     CreatePostDialogState.CLOSED -> {}
                 }

@@ -43,6 +43,7 @@ fun CommentItem(
     replies: List<Reply>,
     onReplyLikeClick: (Reply) -> Unit,
     onDeleteReplyClick: (Reply) -> Unit,
+    onProfileClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -71,7 +72,8 @@ fun CommentItem(
                         text = comment.fullName,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
-                        color = Color.Black
+                        color = Color.Black,
+                        modifier = Modifier.clickable { onProfileClick(comment.userId) }
                     )
                     
                     Box {
@@ -208,7 +210,8 @@ fun CommentItem(
                             ReplyItem(
                                 reply = reply,
                                 onLikeClick = { onReplyLikeClick(reply) },
-                                onDeleteClick = { onDeleteReplyClick(reply) }
+                                onDeleteClick = { onDeleteReplyClick(reply) },
+                                onProfileClick = onProfileClick
                             )
                         }
                     }

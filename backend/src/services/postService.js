@@ -19,10 +19,17 @@ const getFeed = async (currentUserId, page = 1, limit = 20) => {
       likes: {
         where: { userId: currentUserId }
       },
+      comments: {
+        where: { active: true },
+        select: {
+          _count: {
+            select: { replies: { where: { active: true } } }
+          }
+        }
+      },
       _count: {
         select: {
           likes: true,
-          comments: { where: { active: true } },
         },
       },
     },
@@ -31,20 +38,23 @@ const getFeed = async (currentUserId, page = 1, limit = 20) => {
     take: limit,
   });
 
-  return posts.map((post) => ({
-    postId: post.postId,
-    userId: post.userId,
-    content: post.content,
-    image: post.image,
-    createdAt: post.createdAt,
-    updatedAt: post.updatedAt,
-    authorName: post.user.fullName,
-    authorPicture: post.user.profilePicture,
-    authorEmail: post.user.email,
-    likesCount: post._count.likes,
-    commentsCount: post._count.comments,
-    hasLiked: post.likes.length > 0,
-  }));
+  return posts.map((post) => {
+    const commentsCount = post.comments.length + post.comments.reduce((sum, c) => sum + c._count.replies, 0);
+    return {
+      postId: post.postId,
+      userId: post.userId,
+      content: post.content,
+      image: post.image,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      authorName: post.user.fullName,
+      authorPicture: post.user.profilePicture,
+      authorEmail: post.user.email,
+      likesCount: post._count.likes,
+      commentsCount,
+      hasLiked: post.likes.length > 0,
+    };
+  });
 };
 
 const getPostById = async (postId, currentUserId) => {
@@ -62,10 +72,17 @@ const getPostById = async (postId, currentUserId) => {
       likes: {
         where: { userId: currentUserId }
       },
+      comments: {
+        where: { active: true },
+        select: {
+          _count: {
+            select: { replies: { where: { active: true } } }
+          }
+        }
+      },
       _count: {
         select: {
           likes: true,
-          comments: { where: { active: true } },
         },
       },
     },
@@ -74,6 +91,8 @@ const getPostById = async (postId, currentUserId) => {
   if (!post) {
     throw new ApiError(404, "Publicación no encontrada");
   }
+
+  const commentsCount = post.comments.length + post.comments.reduce((sum, c) => sum + c._count.replies, 0);
 
   return {
     postId: post.postId,
@@ -86,7 +105,7 @@ const getPostById = async (postId, currentUserId) => {
     authorPicture: post.user.profilePicture,
     authorEmail: post.user.email,
     likesCount: post._count.likes,
-    commentsCount: post._count.comments,
+    commentsCount,
     hasLiked: post.likes.length > 0,
   };
 };

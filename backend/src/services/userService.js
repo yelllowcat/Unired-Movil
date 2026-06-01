@@ -89,8 +89,25 @@ const getUserProfile = async (userId, currentUserId) => {
 
 const updateUserProfile = async (userId, updateData) => {
   const data = {};
-  if (updateData.fullName !== undefined) data.fullName = updateData.fullName;
-  if (updateData.biography !== undefined) data.biography = updateData.biography;
+  if (updateData.fullName !== undefined) {
+    if (!updateData.fullName || updateData.fullName.trim().length === 0) {
+      throw new ApiError(400, "El nombre completo es obligatorio");
+    }
+    if (updateData.fullName.length > 50) {
+      throw new ApiError(400, "El nombre no puede exceder los 50 caracteres");
+    }
+    const nameRegex = /^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/;
+    if (!nameRegex.test(updateData.fullName)) {
+      throw new ApiError(400, "El nombre solo puede contener letras y espacios");
+    }
+    data.fullName = updateData.fullName;
+  }
+  if (updateData.biography !== undefined) {
+    if (updateData.biography && updateData.biography.length > 200) {
+      throw new ApiError(400, "La descripción no puede exceder los 200 caracteres");
+    }
+    data.biography = updateData.biography;
+  }
   if (updateData.profilePicture !== undefined)
     data.profilePicture = updateData.profilePicture;
 
@@ -108,7 +125,7 @@ const updateUserProfile = async (userId, updateData) => {
   return user;
 };
 
-const getUserPosts = async (userId, page = 1, limit = 20) => {
+const getUserPosts = async (userId, currentUserId, page = 1, limit = 20) => {
   const skip = (page - 1) * limit;
 
   const posts = await prisma.post.findMany({
@@ -122,10 +139,20 @@ const getUserPosts = async (userId, page = 1, limit = 20) => {
           email: true,
         },
       },
+      likes: {
+        where: { userId: currentUserId }
+      },
+      comments: {
+        where: { active: true },
+        select: {
+          _count: {
+            select: { replies: { where: { active: true } } }
+          }
+        }
+      },
       _count: {
         select: {
           likes: true,
-          comments: { where: { active: true } },
         },
       },
     },
@@ -134,19 +161,23 @@ const getUserPosts = async (userId, page = 1, limit = 20) => {
     take: limit,
   });
 
-  return posts.map((post) => ({
-    postId: post.postId,
-    userId: post.userId,
-    content: post.content,
-    image: post.image,
-    createdAt: post.createdAt,
-    updatedAt: post.updatedAt,
-    authorName: post.user.fullName,
-    authorPicture: post.user.profilePicture,
-    authorEmail: post.user.email,
-    likesCount: post._count.likes,
-    commentsCount: post._count.comments,
-  }));
+  return posts.map((post) => {
+    const commentsCount = post.comments.length + post.comments.reduce((sum, c) => sum + c._count.replies, 0);
+    return {
+      postId: post.postId,
+      userId: post.userId,
+      content: post.content,
+      image: post.image,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      authorName: post.user.fullName,
+      authorPicture: post.user.profilePicture,
+      authorEmail: post.user.email,
+      likesCount: post._count.likes,
+      commentsCount,
+      hasLiked: post.likes.length > 0,
+    };
+  });
 };
 
 const searchUsers = async (query, currentUserId, limit = 20) => {
