@@ -231,7 +231,6 @@ const searchUsers = async (query, currentUserId, limit = 20) => {
     }));
   }
 
-  const currentUserIdInt = parseInt(currentUserId, 10);
   const result = [];
 
   for (const user of users) {
