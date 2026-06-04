@@ -18,6 +18,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.unired.data.model.Notification
 import com.unired.data.repository.NotificationRepository
+import com.unired.data.websocket.WebSocketManager
 import com.unired.ui.components.AvatarImage
 import com.unired.ui.components.BottomNavItem
 import com.unired.ui.components.UniRedBottomBar
@@ -25,6 +26,8 @@ import com.unired.ui.navigation.NavGraph
 import com.unired.ui.navigation.Screen
 import com.unired.util.SessionManager
 import kotlinx.coroutines.delay
+
+
 
 @Composable
 fun UniRedApp() {
@@ -40,45 +43,49 @@ fun UniRedApp() {
     )
     val showBottomBar = currentRoute !in hideBaraIn
 
+    // Unread notification badge count
+    var unreadCount by remember { mutableIntStateOf(0) }
+
     val bottomItems = listOf(
         BottomNavItem("Feed", Screen.Feed.route, R.drawable.ic_feed),
         BottomNavItem("newPost", Screen.CreatePost.route, R.drawable.ic_new_post),
+        BottomNavItem("Notificaciones", Screen.Notifications.route, R.drawable.ic_notifications, unreadCount),
         BottomNavItem("Friends", Screen.Friends.route, R.drawable.ic_friends),
         BottomNavItem("Profile", "profile/me", R.drawable.ic_profile)
     )
 
-    // Notification polling and pop-up state
+    // Notification state
     val notificationRepository = remember { NotificationRepository() }
     var activeNotification by remember { mutableStateOf<Notification?>(null) }
     val displayedNotificationIds = remember { mutableStateListOf<Int>() }
-    var isFirstLoad by remember { mutableStateOf(true) }
 
+    // Connect WebSocket on app start (if already logged in)
     LaunchedEffect(Unit) {
-        while (true) {
-            if (SessionManager.isLoggedIn()) {
-                try {
-                    val notifications = notificationRepository.getNotifications()
-                    if (isFirstLoad) {
-                        // Mark existing unread notifications as "displayed" so they don't spam on app start
-                        val unreadIds = notifications.filter { !it.isRead }.map { it.notificationId }
-                        displayedNotificationIds.addAll(unreadIds)
-                        isFirstLoad = false
-                    } else {
-                        // Find new unread notifications that haven't been shown yet
-                        val newUnread = notifications.firstOrNull { !it.isRead && it.notificationId !in displayedNotificationIds }
-                        if (newUnread != null) {
-                            displayedNotificationIds.add(newUnread.notificationId)
-                            activeNotification = newUnread
-                            
-                            // Mark as read in the backend immediately so we don't fetch it again
-                            try {
-                                notificationRepository.markAsRead(newUnread.notificationId)
-                            } catch (_: Exception) {}
-                        }
-                    }
-                } catch (_: Exception) {}
+        if (SessionManager.isLoggedIn()) {
+            WebSocketManager.connect(SessionManager.getToken()!!)
+        }
+    }
+
+    // Collect real-time notifications from WebSocket
+    LaunchedEffect(Unit) {
+        WebSocketManager.incomingNotifications.collect { notification ->
+            if (notification.notificationId !in displayedNotificationIds) {
+                displayedNotificationIds.add(notification.notificationId)
+                activeNotification = notification
+                // Increment badge unless the user is already on the notifications screen
+                if (currentRoute != Screen.Notifications.route) {
+                    unreadCount++
+                }
+                // Mark as read in the background so unread count stays accurate
+                try { notificationRepository.markAsRead(notification.notificationId) } catch (_: Exception) {}
             }
-            delay(10_000) // Poll every 10 seconds
+        }
+    }
+
+    // Reset badge count when the user navigates to the notifications screen
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == Screen.Notifications.route) {
+            unreadCount = 0
         }
     }
 

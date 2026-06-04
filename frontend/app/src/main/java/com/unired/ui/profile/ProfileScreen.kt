@@ -32,6 +32,7 @@ import com.unired.R
 import com.unired.ui.components.AvatarImage
 import com.unired.ui.components.LoadingIndicator
 import com.unired.ui.feed.PostCard
+import com.unired.data.websocket.WebSocketManager
 import com.unired.util.DateFormatter
 import com.unired.util.SessionManager
 
@@ -483,6 +484,7 @@ fun ProfileScreen(
                             textColor = Color(0xFFC62828),
                             onClick = {
                                 showLogoutDialog = false
+                                WebSocketManager.disconnect()
                                 SessionManager.clearSession()
                                 onLogout()
                             }

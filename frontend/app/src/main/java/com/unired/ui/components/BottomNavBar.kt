@@ -5,19 +5,24 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 data class BottomNavItem(
     val label: String,
     val route: String,
-    val iconRes: Int
+    val iconRes: Int,
+    val badgeCount: Int = 0
 )
 
 @Composable
@@ -69,7 +74,7 @@ private fun BottomNavTab(
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp)
     ) {
-        // Línea azul indicadora
+        // Blue indicator bar at the top
         Box(
             modifier = Modifier
                 .width(28.dp)
@@ -77,10 +82,28 @@ private fun BottomNavTab(
                 .background(if (isSelected) Color(0xFF2196F3) else Color.Transparent)
         )
         Spacer(modifier = Modifier.height(6.dp))
-        Image(
-            painter = painterResource(id = item.iconRes),
-            contentDescription = item.label,
-            modifier = Modifier.size(28.dp)
-        )
+
+        // Icon wrapped in BadgedBox when there's a badge count
+        BadgedBox(
+            badge = {
+                if (item.badgeCount > 0) {
+                    Badge(
+                        containerColor = Color(0xFFE53935)
+                    ) {
+                        Text(
+                            text = if (item.badgeCount > 99) "99+" else item.badgeCount.toString(),
+                            fontSize = 9.sp,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        ) {
+            Image(
+                painter = painterResource(id = item.iconRes),
+                contentDescription = item.label,
+                modifier = Modifier.size(28.dp)
+            )
+        }
     }
 }

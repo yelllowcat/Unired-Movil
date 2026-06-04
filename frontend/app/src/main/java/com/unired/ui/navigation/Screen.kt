@@ -16,6 +16,8 @@ sealed class Screen(val route: String) {
 
     object Friends : Screen("friends")
 
+    object Notifications : Screen("notifications")
+
     object Profile : Screen("profile/{userId}")
 
     object EditProfile : Screen("edit_profile")

@@ -13,6 +13,7 @@ import com.unired.util.SessionManager
 import com.unired.ui.post.CreatePostScreen
 import com.unired.ui.post.PostDetailScreen
 import com.unired.ui.friends.FriendsScreen
+import com.unired.ui.notifications.NotificationsScreen
 import com.unired.ui.profile.ProfileScreen
 import com.unired.ui.profile.EditProfileScreen
 
@@ -120,6 +121,17 @@ fun NavGraph(
 
         composable(Screen.Friends.route) {
             FriendsScreen(
+                onNavigateToProfile = { userId ->
+                    navController.navigate("profile/$userId")
+                }
+            )
+        }
+
+        composable(Screen.Notifications.route) {
+            NotificationsScreen(
+                onNavigateToPostDetail = { postId ->
+                    navController.navigate("post_detail/$postId")
+                },
                 onNavigateToProfile = { userId ->
                     navController.navigate("profile/$userId")
                 }

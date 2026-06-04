@@ -1,11 +1,12 @@
 import prisma from "../utils/prisma.js";
 import ApiError from "../utils/ApiError.js";
+import { sendToUser } from "../websocket/wsServer.js";
 
 const createNotification = async (userId, senderId, type, postId = null, commentId = null, replyId = null) => {
   // If the action is triggered by the user on their own content, don't notify them
   if (userId === senderId) return null;
 
-  return await prisma.notification.create({
+  const notification = await prisma.notification.create({
     data: {
       userId,
       senderId,
@@ -15,6 +16,35 @@ const createNotification = async (userId, senderId, type, postId = null, comment
       replyId,
     },
   });
+
+  // Push real-time notification over WebSocket (fire-and-forget)
+  try {
+    const sender = await prisma.user.findUnique({
+      where: { userId: senderId },
+      select: { fullName: true, profilePicture: true },
+    });
+    sendToUser(userId, {
+      type: "new_notification",
+      data: {
+        notificationId: notification.notificationId,
+        userId: notification.userId,
+        senderId: notification.senderId,
+        senderName: sender?.fullName ?? "",
+        senderPicture: sender?.profilePicture ?? null,
+        type: notification.type,
+        postId: notification.postId,
+        commentId: notification.commentId,
+        replyId: notification.replyId,
+        isRead: false,
+        createdAt: notification.createdAt,
+      },
+    });
+  } catch (err) {
+    // Never let WS errors break the notification creation flow
+    console.error("[WS] Failed to push notification:", err.message);
+  }
+
+  return notification;
 };
 
 const getNotifications = async (userId) => {

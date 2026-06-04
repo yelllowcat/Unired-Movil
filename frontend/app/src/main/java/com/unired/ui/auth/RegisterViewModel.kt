@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unired.data.repository.AuthRepository
+import com.unired.data.websocket.WebSocketManager
+import com.unired.util.SessionManager
 import kotlinx.coroutines.launch
 
 class RegisterViewModel(private val repository: AuthRepository = AuthRepository()) : ViewModel() {
@@ -94,6 +96,7 @@ class RegisterViewModel(private val repository: AuthRepository = AuthRepository(
                 errorMessage = null
                 try {
                     repository.register(fullName, email, password)
+                    WebSocketManager.connect(SessionManager.getToken()!!)
                     onSuccess()
                 } catch (e: Exception) {
                     errorMessage = e.message ?: "Ocurrió un error inesperado"

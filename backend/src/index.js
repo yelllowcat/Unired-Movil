@@ -1,7 +1,9 @@
+import { createServer } from "http";
 import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import { initWebSocket } from "./websocket/wsServer.js";
 import env from "./config/env.js";
 import errorHandler from "./middlewares/errorHandler.js";
 import ApiError from "./utils/ApiError.js";
@@ -29,6 +31,9 @@ app.use((req, res, next) => {
 
 app.use(errorHandler);
 
-app.listen(env.PORT, () => {
+const server = createServer(app);
+initWebSocket(server);
+
+server.listen(env.PORT, () => {
   console.log(`Server is running on port ${env.PORT}`);
 });
