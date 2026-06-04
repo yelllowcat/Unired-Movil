@@ -2,6 +2,7 @@ package com.unired.ui.profile
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -139,47 +140,58 @@ fun ProfileScreen(
                                         .fillMaxWidth()
                                         .padding(top = 16.dp)
                                 ) {
-                                    // Back button (at the top left when entering a profile)
-                                    Box(
+                                    // Row container for back and logout buttons to position them above the card
+                                    Row(
                                         modifier = Modifier
-                                            .align(Alignment.TopStart)
-                                            .padding(top = 16.dp, start = 8.dp)
-                                            .size(48.dp)
-                                            .shadow(2.dp, shape = RoundedCornerShape(12.dp))
-                                            .background(Color.White, shape = RoundedCornerShape(12.dp))
-                                            .clickable {
-                                                onNavigateBack()
-                                            },
-                                        contentAlignment = Alignment.Center
+                                            .fillMaxWidth()
+                                            .padding(top = 24.dp, start = 8.dp, end = 8.dp)
+                                            .height(48.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Regresar",
-                                            tint = Color.Black,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-
-                                    // Logout button (only if it's my own profile)
-                                    if (isMe) {
+                                        // Back button
                                         Box(
                                             modifier = Modifier
-                                                .align(Alignment.TopEnd)
-                                                .padding(top = 16.dp, end = 8.dp)
                                                 .size(48.dp)
                                                 .shadow(2.dp, shape = RoundedCornerShape(12.dp))
                                                 .background(Color.White, shape = RoundedCornerShape(12.dp))
+                                                .clip(RoundedCornerShape(12.dp))
                                                 .clickable {
-                                                    showLogoutDialog = true
+                                                    onNavigateBack()
                                                 },
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
-                                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                                                contentDescription = "Cerrar sesión",
+                                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                                contentDescription = "Regresar",
                                                 tint = Color.Black,
                                                 modifier = Modifier.size(24.dp)
                                             )
+                                        }
+
+                                        // Logout button (only if it's my own profile)
+                                        if (isMe) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .shadow(2.dp, shape = RoundedCornerShape(12.dp))
+                                                    .background(Color.White, shape = RoundedCornerShape(12.dp))
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clickable {
+                                                        showLogoutDialog = true
+                                                    },
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                                    contentDescription = "Cerrar sesión",
+                                                    tint = Color.Black,
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                            }
+                                        } else {
+                                            // Empty placeholder to keep the Row's SpaceBetween arrangement balanced
+                                            Spacer(modifier = Modifier.size(48.dp))
                                         }
                                     }
 
@@ -187,7 +199,7 @@ fun ProfileScreen(
                                     Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(top = 60.dp), // Shift card down
+                                            .padding(top = 96.dp), // Shift card down to clear the back/logout buttons
                                         shape = RoundedCornerShape(24.dp),
                                         colors = CardDefaults.cardColors(containerColor = Color.White),
                                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -198,7 +210,7 @@ fun ProfileScreen(
                                                 .padding(horizontal = 16.dp, vertical = 20.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            Spacer(modifier = Modifier.height(50.dp)) // space for avatar bottom half
+                                            Spacer(modifier = Modifier.height(34.dp)) // adjusted space for avatar overlapping bottom half and spacing for user info
 
                                             Text(
                                                 text = user.fullName,
@@ -341,18 +353,72 @@ fun ProfileScreen(
                             // User's Posts list
                             if (posts.isEmpty()) {
                                 item {
-                                    Box(
+                                    Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 32.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "No hay publicaciones de este usuario aún.",
-                                            color = Color.White.copy(alpha = 0.8f),
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium
+                                            .padding(horizontal = 8.dp, vertical = 16.dp)
+                                            .shadow(6.dp, shape = RoundedCornerShape(24.dp)),
+                                        shape = RoundedCornerShape(24.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = Color.White
+                                        ),
+                                        border = BorderStroke(
+                                            width = 1.dp,
+                                            color = Color.LightGray.copy(alpha = 0.5f)
                                         )
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 24.dp, vertical = 32.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            // Glowing Icon Container
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(72.dp)
+                                                    .background(
+                                                        color = Color(0xFF33B5B5).copy(alpha = 0.1f),
+                                                        shape = CircleShape
+                                                    ),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.ic_feed),
+                                                    contentDescription = null,
+                                                    tint = Color(0xFF33B5B5),
+                                                    modifier = Modifier.size(36.dp)
+                                                )
+                                            }
+
+                                            Spacer(modifier = Modifier.height(20.dp))
+
+                                            // Main Text
+                                            Text(
+                                                text = if (isMe) "Sin publicaciones aún" else "Sin publicaciones",
+                                                color = Color.Black,
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                textAlign = TextAlign.Center
+                                            )
+
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            // Supporting Text
+                                            Text(
+                                                text = if (isMe) {
+                                                    "¡Comparte algo con la comunidad! Crea tu primera publicación usando el botón de agregar."
+                                                } else {
+                                                    "Este usuario aún no ha realizado ninguna publicación en su perfil."
+                                                },
+                                                color = Color.DarkGray,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Normal,
+                                                textAlign = TextAlign.Center,
+                                                lineHeight = 20.sp
+                                            )
+                                        }
                                     }
                                 }
                             } else {

@@ -98,9 +98,12 @@ fun UniRedApp() {
                         items = bottomItems,
                         currentRoute = currentRoute,
                         onItemClick = { item ->
-                            if ( currentRoute != item.route){
-                                navController.navigate(item.route){
-                                    popUpTo(Screen.Feed.route) {saveState = true }
+                            // Intenta regresar (pop) a la pestaña si ya existe en la pila de navegación.
+                            // De lo contrario, realiza la navegación estándar.
+                            val popped = navController.popBackStack(route = item.route, inclusive = false)
+                            if (!popped) {
+                                navController.navigate(item.route) {
+                                    popUpTo(Screen.Feed.route) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
