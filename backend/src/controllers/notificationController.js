@@ -3,7 +3,9 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 
 const getNotifications = asyncHandler(async (req, res) => {
-  const notifications = await notificationService.getNotifications(req.user.userId);
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+  const cursor = req.query.cursor ? parseInt(req.query.cursor, 10) : null;
+  const notifications = await notificationService.getNotifications(req.user.userId, limit, cursor);
   res.status(200).json({ success: true, data: notifications });
 });
 

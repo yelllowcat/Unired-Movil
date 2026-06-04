@@ -7,8 +7,8 @@ import com.unired.data.model.Notification
 class NotificationRepository(
     private val api: NotificationApi = ApiClient.retrofit.create(NotificationApi::class.java)
 ) {
-    suspend fun getNotifications(): List<Notification> {
-        return safeApiCall { api.getNotifications() }
+    suspend fun getNotifications(limit: Int = 20, cursor: Int? = null): List<Notification> {
+        return safeApiCall { api.getNotifications(limit, cursor) }
     }
 
     suspend fun getUnreadCount(): Int {

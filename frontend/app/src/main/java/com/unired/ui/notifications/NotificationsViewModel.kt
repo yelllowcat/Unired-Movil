@@ -23,6 +23,12 @@ class NotificationsViewModel(
     var isRefreshing by mutableStateOf(false)
         private set
 
+    var isPageLoading by mutableStateOf(false)
+        private set
+
+    var hasMore by mutableStateOf(true)
+        private set
+
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
@@ -35,8 +41,11 @@ class NotificationsViewModel(
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
+            hasMore = true
             try {
-                notifications = repository.getNotifications()
+                val initialNotifications = repository.getNotifications(limit = 20)
+                notifications = initialNotifications
+                hasMore = initialNotifications.size >= 20
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al cargar las notificaciones"
             } finally {
@@ -49,11 +58,44 @@ class NotificationsViewModel(
         viewModelScope.launch {
             isRefreshing = true
             try {
-                notifications = repository.getNotifications()
+                val freshNotifications = repository.getNotifications(limit = 20)
+                notifications = freshNotifications
+                hasMore = freshNotifications.size >= 20
             } catch (e: Exception) {
                 // Keep existing list on pull-to-refresh failure
             } finally {
                 isRefreshing = false
+            }
+        }
+    }
+
+    fun loadNextPage() {
+        if (isPageLoading || !hasMore || notifications.isEmpty()) return
+
+        viewModelScope.launch {
+            isPageLoading = true
+            try {
+                val lastId = notifications.lastOrNull()?.notificationId
+                val newPage = repository.getNotifications(limit = 20, cursor = lastId)
+                if (newPage.isEmpty()) {
+                    hasMore = false
+                } else {
+                    val existingIds = notifications.map { it.notificationId }.toSet()
+                    val filteredNewPage = newPage.filter { it.notificationId !in existingIds }
+                    
+                    if (filteredNewPage.isEmpty()) {
+                        hasMore = false
+                    } else {
+                        notifications = notifications + filteredNewPage
+                        if (newPage.size < 20) {
+                            hasMore = false
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Silently ignore page loading errors to avoid disrupting user experience
+            } finally {
+                isPageLoading = false
             }
         }
     }

@@ -47,8 +47,8 @@ const createNotification = async (userId, senderId, type, postId = null, comment
   return notification;
 };
 
-const getNotifications = async (userId) => {
-  const notifications = await prisma.notification.findMany({
+const getNotifications = async (userId, limit = 20, cursor = null) => {
+  const query = {
     where: { userId },
     include: {
       sender: {
@@ -59,8 +59,16 @@ const getNotifications = async (userId) => {
         },
       },
     },
-    orderBy: { createdAt: "desc" },
-  });
+    orderBy: { notificationId: "desc" },
+    take: parseInt(limit, 10) || 20,
+  };
+
+  if (cursor) {
+    query.cursor = { notificationId: parseInt(cursor, 10) };
+    query.skip = 1;
+  }
+
+  const notifications = await prisma.notification.findMany(query);
 
   return notifications.map((notification) => ({
     notificationId: notification.notificationId,

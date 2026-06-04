@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -109,10 +111,10 @@ fun NotificationsScreen(
                             ) {
                                 // ── Unread section ────────────────────────
                                 if (unreadNotifications.isNotEmpty()) {
-                                    items(
+                                    itemsIndexed(
                                         items = unreadNotifications,
-                                        key = { it.notificationId }
-                                    ) { notification ->
+                                        key = { _, it -> it.notificationId }
+                                    ) { index, notification ->
                                         NotificationRow(
                                             notification = notification,
                                             onClick = {
@@ -124,6 +126,12 @@ fun NotificationsScreen(
                                                 }
                                             }
                                         )
+                                        // Trigger loading next page when close to the bottom if there are no read notifications
+                                        if (readNotifications.isEmpty() && index >= unreadNotifications.lastIndex - 2) {
+                                            LaunchedEffect(index) {
+                                                viewModel.loadNextPage()
+                                            }
+                                        }
                                     }
                                 }
 
@@ -134,10 +142,10 @@ fun NotificationsScreen(
                                             SectionDivider(label = "Anteriores")
                                         }
                                     }
-                                    items(
+                                    itemsIndexed(
                                         items = readNotifications,
-                                        key = { it.notificationId }
-                                    ) { notification ->
+                                        key = { _, it -> it.notificationId }
+                                    ) { index, notification ->
                                         NotificationRow(
                                             notification = notification,
                                             onClick = {
@@ -148,6 +156,29 @@ fun NotificationsScreen(
                                                 }
                                             }
                                         )
+                                        // Trigger loading next page when close to the bottom of read notifications
+                                        if (index >= readNotifications.lastIndex - 2) {
+                                            LaunchedEffect(index) {
+                                                viewModel.loadNextPage()
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // ── Paging loader ─────────────────────────
+                                if (viewModel.isPageLoading) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                color = Color(0xFF33B5B5)
+                                            )
+                                        }
                                     }
                                 }
                             }

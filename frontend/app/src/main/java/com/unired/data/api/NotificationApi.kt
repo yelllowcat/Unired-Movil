@@ -5,10 +5,14 @@ import com.unired.data.model.response.UnreadCountResponse
 import retrofit2.http.GET
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface NotificationApi {
     @GET("notifications")
-    suspend fun getNotifications(): ApiResponse<List<Notification>>
+    suspend fun getNotifications(
+        @Query("limit") limit: Int,
+        @Query("cursor") cursor: Int? = null
+    ): ApiResponse<List<Notification>>
 
     @GET("notifications/unread-count")
     suspend fun getUnreadCount(): ApiResponse<UnreadCountResponse>
