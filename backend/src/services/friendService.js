@@ -92,14 +92,39 @@ const getFriends = async (userId) => {
       OR: [{ userId1: userId }, { userId2: userId }],
     },
     include: {
-      user1: { select: { userId: true, fullName: true, profilePicture: true } },
-      user2: { select: { userId: true, fullName: true, profilePicture: true } },
+      user1: {
+        select: {
+          userId: true,
+          fullName: true,
+          profilePicture: true,
+          biography: true,
+          registrationDate: true,
+        },
+      },
+      user2: {
+        select: {
+          userId: true,
+          fullName: true,
+          profilePicture: true,
+          biography: true,
+          registrationDate: true,
+        },
+      },
     },
   });
 
   return friends.map((f) => {
     const isUser1 = f.userId1 === userId;
-    return isUser1 ? f.user2 : f.user1;
+    const friend = isUser1 ? f.user2 : f.user1;
+    return {
+      userId: friend.userId,
+      fullName: friend.fullName,
+      profilePicture: friend.profilePicture,
+      biography: friend.biography,
+      registrationDate: friend.registrationDate,
+      friendshipStatus: "friends",
+      friendRequestId: null,
+    };
   });
 };
 

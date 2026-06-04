@@ -6,6 +6,6 @@ data class UserPreview(
     val profilePicture: String?,
     val biography: String? = null,
     val registrationDate: String? = null,
-    val friendshipStatus: String = "none",
+    val friendshipStatus: String? = "none",
     val friendRequestId: Int? = null
 )

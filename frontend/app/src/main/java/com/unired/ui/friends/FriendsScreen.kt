@@ -128,7 +128,7 @@ fun FriendsScreen(
                                 FriendsTab.SOLICITUDES -> "Solicitudes"
                                 FriendsTab.ENVIAR_SOLICITUD -> "Enviar solicitud"
                                 FriendsTab.PENDIENTES -> "Solicitudes pendientes"
-                                FriendsTab.TODOS -> "Todos los amigos"
+                                FriendsTab.TODOS -> "Tus amigos"
                             }
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -347,7 +347,7 @@ fun SearchResultsList(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            when (user.friendshipStatus) {
+                            when (user.friendshipStatus ?: "none") {
                                 "me" -> {
                                     Button(
                                         onClick = { onNavigateToProfile(user.userId) },
