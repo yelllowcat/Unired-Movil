@@ -1,5 +1,6 @@
 package com.unired.ui.post
 
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -71,11 +72,49 @@ fun PostDetailScreen(
 ) {
     val uiState = viewModel.uiState
     val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+    val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
     var optionsState by remember { mutableStateOf(PostOptionsState.CLOSED) }
     var commentText by remember { mutableStateOf(CommentDraftManager.getDraft(postId)) }
     var activeReplyingComment by remember { mutableStateOf<Comment?>(null) }
     var isImageViewerOpen by remember { mutableStateOf(false) }
     val serverUrl = ApiClient.BASE_URL.substringBefore("/api/")
+
+    val handleSend = {
+        if (commentText.isNotBlank()) {
+            val text = commentText
+            val replyTo = activeReplyingComment
+            if (replyTo != null) {
+                viewModel.addReply(replyTo.commentId, text) {
+                    commentText = ""
+                    activeReplyingComment = null
+                    coroutineScope.launch {
+                        try {
+                            val successState = viewModel.uiState as? PostDetailUiState.Success
+                            if (successState != null) {
+                                val parentIndex = successState.comments.indexOfFirst { it.commentId == replyTo.commentId }
+                                if (parentIndex != -1) {
+                                    // Add 1 to offset the header (item 0 in LazyColumn is post detail)
+                                    lazyListState.animateScrollToItem(parentIndex + 1)
+                                }
+                            }
+                        } catch (_: Exception) {}
+                    }
+                }
+            } else {
+                viewModel.addComment(text) {
+                    commentText = ""
+                    CommentDraftManager.clearDraft(postId)
+                    coroutineScope.launch {
+                        try {
+                            val count = (viewModel.uiState as? PostDetailUiState.Success)?.comments?.size ?: 0
+                            lazyListState.animateScrollToItem(count)
+                        } catch (_: Exception) {}
+                    }
+                }
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Geometric Background
@@ -186,44 +225,12 @@ fun PostDetailScreen(
                                         imeAction = ImeAction.Send
                                     ),
                                     keyboardActions = KeyboardActions(
-                                        onSend = {
-                                            if (commentText.isNotBlank()) {
-                                                val text = commentText
-                                                val replyTo = activeReplyingComment
-                                                if (replyTo != null) {
-                                                    viewModel.addReply(replyTo.commentId, text) {
-                                                        commentText = ""
-                                                        activeReplyingComment = null
-                                                    }
-                                                } else {
-                                                    viewModel.addComment(text) {
-                                                        commentText = ""
-                                                        CommentDraftManager.clearDraft(postId)
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        onSend = { handleSend() }
                                     )
                                 )
 
                                 IconButton(
-                                    onClick = {
-                                        if (commentText.isNotBlank()) {
-                                            val text = commentText
-                                            val replyTo = activeReplyingComment
-                                            if (replyTo != null) {
-                                                viewModel.addReply(replyTo.commentId, text) {
-                                                    commentText = ""
-                                                    activeReplyingComment = null
-                                                }
-                                            } else {
-                                                viewModel.addComment(text) {
-                                                    commentText = ""
-                                                    CommentDraftManager.clearDraft(postId)
-                                                }
-                                            }
-                                        }
-                                    },
+                                    onClick = { handleSend() },
                                     modifier = Modifier
                                         .size(48.dp)
                                         .background(Color(0xFFE0E0E0), shape = CircleShape)
@@ -278,7 +285,9 @@ fun PostDetailScreen(
                         val comments = uiState.comments
 
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize()
+                            state = lazyListState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
                             // Flat, edge-to-edge Post Details section matching Figma
                             item {

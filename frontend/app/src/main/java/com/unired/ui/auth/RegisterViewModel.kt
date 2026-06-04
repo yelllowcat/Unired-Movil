@@ -42,19 +42,25 @@ class RegisterViewModel(private val repository: AuthRepository = AuthRepository(
         }
     }
     fun onEmailChange(newValue: String) {
-        email = newValue
-        if (emailError != null) emailError = null
-        if (errorMessage != null) errorMessage = null
+        if (newValue.length <= 100) {
+            email = newValue
+            if (emailError != null) emailError = null
+            if (errorMessage != null) errorMessage = null
+        }
     }
     fun onPasswordChange(newValue: String) {
-        password = newValue
-        if (passwordError != null) passwordError = null
-        if (errorMessage != null) errorMessage = null
+        if (newValue.length <= 100) {
+            password = newValue
+            if (passwordError != null) passwordError = null
+            if (errorMessage != null) errorMessage = null
+        }
     }
     fun onConfirmPasswordChange(newValue: String) {
-        confirmPassword = newValue
-        if (confirmPasswordError != null) confirmPasswordError = null
-        if (errorMessage != null) errorMessage = null
+        if (newValue.length <= 100) {
+            confirmPassword = newValue
+            if (confirmPasswordError != null) confirmPasswordError = null
+            if (errorMessage != null) errorMessage = null
+        }
     }
 
     fun validate(): Boolean {

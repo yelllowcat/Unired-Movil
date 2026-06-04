@@ -47,172 +47,211 @@ fun CommentItem(
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var repliesExpanded by remember { mutableStateOf(false) }
+    var previousRepliesSize by remember { mutableStateOf(replies.size) }
+
+    LaunchedEffect(replies.size) {
+        if (replies.size > previousRepliesSize) {
+            repliesExpanded = true
+        }
+        previousRepliesSize = replies.size
+    }
+
     val currentUserId = SessionManager.getUserId()
     val isOwnComment = comment.userId == currentUserId
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
+    val isNew = remember {
+        val dateStr = comment.createdAt
+        if (dateStr.isNullOrBlank()) false
+        else {
+            try {
+                val date = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault()).apply {
+                    timeZone = java.util.TimeZone.getTimeZone("UTC")
+                }.parse(dateStr.replace(".SSSZ", "Z").replace("Z", ""))
+                date?.let { System.currentTimeMillis() - it.time < 5000 } ?: false
+            } catch (_: Exception) {
+                false
+            }
+        }
+    }
+    var isVisible by remember { mutableStateOf(!isNew) }
+    LaunchedEffect(Unit) {
+        if (isNew) {
+            isVisible = true
+        }
+    }
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(500)) + expandVertically(animationSpec = androidx.compose.animation.core.tween(500)),
+        exit = fadeOut()
     ) {
-        // Comment bubble container
-        Box(
-            modifier = Modifier
+        Column(
+            modifier = modifier
                 .fillMaxWidth()
-                .background(Color(0xFFF5F5F5), shape = RoundedCornerShape(16.dp))
-                .padding(12.dp)
+                .padding(vertical = 4.dp)
         ) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = comment.fullName,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = Color.Black,
-                        modifier = Modifier.clickable { onProfileClick(comment.userId) }
-                    )
-                    
-                    Box {
-                        IconButton(
-                            onClick = { showMenu = true },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Opciones de comentario",
-                                tint = Color.Gray
-                            )
-                        }
+            // Comment bubble container
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF5F5F5), shape = RoundedCornerShape(16.dp))
+                    .padding(12.dp)
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = comment.fullName,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color.Black,
+                            modifier = Modifier.clickable { onProfileClick(comment.userId) }
+                        )
                         
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            if (isOwnComment) {
-                                DropdownMenuItem(
-                                    text = { Text("Eliminar") },
-                                    onClick = {
-                                        showMenu = false
-                                        onDeleteClick()
-                                    }
+                        Box {
+                            IconButton(
+                                onClick = { showMenu = true },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Opciones de comentario",
+                                    tint = Color.Gray
                                 )
-                            } else {
-                                DropdownMenuItem(
-                                    text = { Text("Ocultar") },
-                                    onClick = {
-                                        showMenu = false
-                                        onHideClick()
-                                    }
-                                )
+                            }
+                            
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                if (isOwnComment) {
+                                    DropdownMenuItem(
+                                        text = { Text("Eliminar") },
+                                        onClick = {
+                                            showMenu = false
+                                            onDeleteClick()
+                                        }
+                                    )
+                                } else {
+                                    DropdownMenuItem(
+                                        text = { Text("Ocultar") },
+                                        onClick = {
+                                            showMenu = false
+                                            onHideClick()
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
-                }
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Text(
-                    text = comment.content,
-                    fontSize = 14.sp,
-                    color = Color.DarkGray
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = DateFormatter.formatRelativeTime(comment.createdAt),
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
                     
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     
                     Text(
-                        text = "Responder",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Gray,
-                        modifier = Modifier.clickable { onReplyClick() }
+                        text = comment.content,
+                        fontSize = 14.sp,
+                        color = Color.DarkGray
                     )
                     
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.height(8.dp))
                     
-                    LikeButton(
-                        hasLiked = comment.hasLiked,
-                        likesCount = comment.likesCount,
-                        onLikeClick = onLikeClick,
-                        iconSize = 16.dp,
-                        fontSize = 12.sp,
-                        textColor = Color.Gray
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = DateFormatter.formatRelativeTime(comment.createdAt),
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Text(
+                            text = "Responder",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Gray,
+                            modifier = Modifier.clickable {
+                                repliesExpanded = true
+                                onReplyClick()
+                            }
+                        )
+                        
+                        Spacer(modifier = Modifier.weight(1f))
+                        
+                        LikeButton(
+                            hasLiked = comment.hasLiked,
+                            likesCount = comment.likesCount,
+                            onLikeClick = onLikeClick,
+                            iconSize = 16.dp,
+                            fontSize = 12.sp,
+                            textColor = Color.Gray
+                        )
+                    }
                 }
             }
-        }
-        
-        if (replies.isNotEmpty()) {
-            var repliesExpanded by remember { mutableStateOf(false) }
-
-            // Toggle Button
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 12.dp, top = 4.dp, bottom = 4.dp)
-                    .clickable { repliesExpanded = !repliesExpanded },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = if (repliesExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = Color(0xFF40B6BA),
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = if (repliesExpanded) "Ocultar respuestas" else "Ver respuestas (${replies.size})",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF40B6BA)
-                )
-            }
-
-            AnimatedVisibility(
-                visible = repliesExpanded,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
+            
+            if (replies.isNotEmpty()) {
+    
+                // Toggle Button
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 20.dp, top = 4.dp, end = 4.dp)
-                        .height(IntrinsicSize.Min)
+                        .padding(start = 12.dp, top = 4.dp, bottom = 4.dp)
+                        .clickable { repliesExpanded = !repliesExpanded },
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .width(2.dp)
-                            .background(Color(0xFFD3D3D3))
+                    Icon(
+                        imageVector = if (repliesExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = Color(0xFF40B6BA),
+                        modifier = Modifier.size(16.dp)
                     )
-                    
-                    Spacer(modifier = Modifier.width(12.dp))
-                    
-                    Column(
-                        modifier = Modifier.weight(1f)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (repliesExpanded) "Ocultar respuestas" else "Ver respuestas (${replies.size})",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF40B6BA)
+                    )
+                }
+    
+                AnimatedVisibility(
+                    visible = repliesExpanded,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 20.dp, top = 4.dp, end = 4.dp)
+                            .height(IntrinsicSize.Min)
                     ) {
-                        replies.forEach { reply ->
-                            ReplyItem(
-                                reply = reply,
-                                onLikeClick = { onReplyLikeClick(reply) },
-                                onDeleteClick = { onDeleteReplyClick(reply) },
-                                onProfileClick = onProfileClick
-                            )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .width(2.dp)
+                                .background(Color(0xFFD3D3D3))
+                        )
+                        
+                        Spacer(modifier = Modifier.width(12.dp))
+                        
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            replies.forEach { reply ->
+                                ReplyItem(
+                                    reply = reply,
+                                    onLikeClick = { onReplyLikeClick(reply) },
+                                    onDeleteClick = { onDeleteReplyClick(reply) },
+                                    onProfileClick = onProfileClick
+                                )
+                            }
                         }
                     }
                 }

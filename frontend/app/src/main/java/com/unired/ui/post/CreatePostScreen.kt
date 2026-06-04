@@ -445,7 +445,19 @@ fun CreatePostDialog(
 ) {
     if (state == CreatePostDialogState.CLOSED) return
 
-    Dialog(onDismissRequest = onDismiss) {
+    val isSuccessState = state == CreatePostDialogState.SUCCESS_PUBLISHED
+
+    Dialog(
+        onDismissRequest = {
+            if (!isSuccessState) {
+                onDismiss()
+            }
+        },
+        properties = androidx.compose.ui.window.DialogProperties(
+            dismissOnBackPress = !isSuccessState,
+            dismissOnClickOutside = !isSuccessState
+        )
+    ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()

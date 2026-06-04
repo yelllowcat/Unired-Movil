@@ -79,9 +79,11 @@ class FriendsViewModel(
     }
 
     fun onSearchQueryChange(query: String) {
-        searchQuery = query
-        if (currentTab == FriendsTab.ENVIAR_SOLICITUD) {
-            performSearch()
+        if (query.length <= 50) {
+            searchQuery = query
+            if (currentTab == FriendsTab.ENVIAR_SOLICITUD) {
+                performSearch()
+            }
         }
     }
 

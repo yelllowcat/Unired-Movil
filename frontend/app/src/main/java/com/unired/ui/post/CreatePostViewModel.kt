@@ -86,6 +86,7 @@ class CreatePostViewModel(
     }
 
     fun createPost(context: Context, onSuccess: () -> Unit) {
+        if (isUploading) return
         if (postContent.trim().isBlank() && selectedImageUri == null) {
             errorMessage = "La publicación no puede estar vacía"
             return
@@ -110,7 +111,7 @@ class CreatePostViewModel(
     }
 
     fun updatePost(context: Context, onSuccess: () -> Unit) {
-        if (postId == null) return
+        if (postId == null || isUploading) return
         if (postContent.trim().isBlank() && selectedImageUri == null && existingImageUrl == null) {
             errorMessage = "La publicación no puede estar vacía"
             return

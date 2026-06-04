@@ -242,14 +242,14 @@ fun ProfileScreen(
 
                                             Spacer(modifier = Modifier.height(20.dp))
 
-                                            // Profile Stats (Publicaciones, Amigos, Megustas)
+                                            // Profile Stats (Publicaciones, Amigos, Me gustas)
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceEvenly
                                             ) {
                                                 StatColumn(value = user.postsCount.toString(), label = "Publicaciones")
                                                 StatColumn(value = user.friendsCount.toString(), label = "Amigos")
-                                                StatColumn(value = user.likesCount.toString(), label = "Megustas")
+                                                StatColumn(value = user.likesCount.toString(), label = "Me gustas")
                                             }
 
                                             Spacer(modifier = Modifier.height(24.dp))
@@ -305,7 +305,7 @@ fun ProfileScreen(
                                                                 .weight(1f)
                                                                 .height(44.dp)
                                                         ) {
-                                                            Text(text = "Rechazar amistad", color = Color.White, fontWeight = FontWeight.Bold)
+                                                            Text(text = "Rechazar", color = Color.White, fontWeight = FontWeight.Bold)
                                                         }
 
                                                         Button(
@@ -316,7 +316,7 @@ fun ProfileScreen(
                                                                 .weight(1f)
                                                                 .height(44.dp)
                                                         ) {
-                                                            Text(text = "Aceptar amistad", color = Color.White, fontWeight = FontWeight.Bold)
+                                                            Text(text = "Aceptar", color = Color.White, fontWeight = FontWeight.Bold)
                                                         }
                                                     }
                                                 }
