@@ -82,6 +82,9 @@ fun NavGraph(
                 },
                 onBack = {
                     navController.popBackStack()
+                },
+                onNavigateToEditPost = { editPostId ->
+                    navController.navigate("edit_post/$editPostId")
                 }
             )
         }
@@ -95,6 +98,22 @@ fun NavGraph(
                     navController.navigate(Screen.Feed.route) {
                         popUpTo(Screen.Feed.route) { inclusive = true }
                     }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.EditPost.route,
+            arguments = listOf(navArgument("postId") { type = androidx.navigation.NavType.IntType })
+        ) { backStackEntry ->
+            val editPostId = backStackEntry.arguments?.getInt("postId") ?: 0
+            CreatePostScreen(
+                postId = editPostId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onPostCreated = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -127,6 +146,9 @@ fun NavGraph(
                 },
                 onEditProfileClick = {
                     navController.navigate(Screen.EditProfile.route)
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }

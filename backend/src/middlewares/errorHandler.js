@@ -2,6 +2,7 @@ const errorHandler = (err, req, res, next) => {
   let { statusCode, message } = err;
 
   if (!err.isOperational) {
+    console.error('Unexpected error:', err);
     statusCode = 500;
     message = 'Internal Server Error';
   }

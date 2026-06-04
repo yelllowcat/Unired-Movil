@@ -32,9 +32,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import androidx.compose.ui.window.Dialog
 import com.unired.R
 import com.unired.ui.components.AvatarImage
 import com.unired.ui.components.LoadingIndicator
+import com.unired.data.api.ApiClient
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,9 +44,18 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePostScreen(
+    postId: Int? = null,
     onNavigateBack: () -> Unit,
     onPostCreated: () -> Unit,
-    viewModel: CreatePostViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: CreatePostViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        key = postId?.toString(),
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return CreatePostViewModel(postId, com.unired.data.repository.PostRepository(), com.unired.data.repository.UserRepository()) as T
+            }
+        }
+    )
 ) {
     val context = LocalContext.current
     val postContent = viewModel.postContent
@@ -53,6 +64,7 @@ fun CreatePostScreen(
     val errorMessage = viewModel.errorMessage
     val authorName = viewModel.authorName
     val authorPicture = viewModel.authorPicture
+    var dialogState by remember { mutableStateOf(CreatePostDialogState.CLOSED) }
 
     val pickMediaLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -97,7 +109,15 @@ fun CreatePostScreen(
                             .size(width = 64.dp, height = 48.dp)
                             .shadow(2.dp, shape = RoundedCornerShape(24.dp))
                             .background(Color.White, shape = RoundedCornerShape(24.dp))
-                            .clickable { if (!isUploading) onNavigateBack() },
+                            .clickable { 
+                                if (!isUploading) {
+                                    if (postContent.isNotBlank() || selectedImageUri != null || viewModel.existingImageUrl != null) {
+                                        dialogState = CreatePostDialogState.CONFIRM_DISCARD
+                                    } else {
+                                        onNavigateBack()
+                                    }
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -189,7 +209,7 @@ fun CreatePostScreen(
                                     .height(220.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (selectedImageUri == null) {
+                                if (selectedImageUri == null && viewModel.existingImageUrl == null) {
                                     IconButton(
                                         onClick = { pickMediaLauncher.launch("image/*") },
                                         modifier = Modifier.size(100.dp)
@@ -203,8 +223,16 @@ fun CreatePostScreen(
                                     }
                                 } else {
                                     Box(modifier = Modifier.fillMaxSize()) {
+                                        val imageModel = selectedImageUri ?: run {
+                                            val imgUrl = viewModel.existingImageUrl
+                                            if (imgUrl != null) {
+                                                if (imgUrl.startsWith("http")) imgUrl else "${ApiClient.BASE_URL.substringBefore("/api/")}$imgUrl"
+                                            } else {
+                                                null
+                                            }
+                                        }
                                         AsyncImage(
-                                            model = selectedImageUri,
+                                            model = imageModel,
                                             contentDescription = "Imagen seleccionada",
                                             modifier = Modifier.fillMaxSize(),
                                             contentScale = ContentScale.Crop
@@ -212,7 +240,10 @@ fun CreatePostScreen(
                                         
                                         // Remove Image Button
                                         IconButton(
-                                            onClick = { viewModel.onImageSelected(null) },
+                                            onClick = { 
+                                                viewModel.onImageSelected(null) 
+                                                viewModel.existingImageUrl = null
+                                            },
                                             modifier = Modifier
                                                 .padding(8.dp)
                                                 .size(32.dp)
@@ -291,21 +322,49 @@ fun CreatePostScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Action Buttons Row (Figma: Eliminar publicación & Guardar cambios)
-                    Row(
+                    // Action Buttons Column (Responsive stacked buttons)
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 32.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Button(
                             onClick = {
-                                viewModel.onContentChange("")
-                                viewModel.onImageSelected(null)
-                                onNavigateBack()
+                                if (postId != null) {
+                                    dialogState = CreatePostDialogState.CONFIRM_CHANGES
+                                } else {
+                                    viewModel.createPost(context) {
+                                        dialogState = CreatePostDialogState.SUCCESS_PUBLISHED
+                                    }
+                                }
                             },
                             modifier = Modifier
-                                .weight(1f)
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)), // Teal
+                            shape = RoundedCornerShape(24.dp),
+                            enabled = !isUploading && (postContent.isNotBlank() || selectedImageUri != null || viewModel.existingImageUrl != null)
+                        ) {
+                            Text(
+                                text = "Guardar cambios",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                if (postContent.isNotBlank() || selectedImageUri != null || viewModel.existingImageUrl != null) {
+                                    dialogState = CreatePostDialogState.CONFIRM_DISCARD
+                                } else {
+                                    onNavigateBack()
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
                                 .height(48.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)), // Red
                             shape = RoundedCornerShape(24.dp)
@@ -315,28 +374,7 @@ fun CreatePostScreen(
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
-                            )
-                        }
-
-                        Button(
-                            onClick = {
-                                viewModel.createPost(context) {
-                                    onPostCreated()
-                                }
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33B5B5)), // Teal
-                            shape = RoundedCornerShape(24.dp),
-                            enabled = !isUploading && (postContent.isNotBlank() || selectedImageUri != null)
-                        ) {
-                            Text(
-                                text = "Guardar cambios",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
+                              )
                         }
                     }
                 }
@@ -365,5 +403,176 @@ fun CreatePostScreen(
                 }
             }
         }
+
+        CreatePostDialog(
+            state = dialogState,
+            onDismiss = { dialogState = CreatePostDialogState.CLOSED },
+            onDiscardConfirm = {
+                viewModel.onContentChange("")
+                viewModel.onImageSelected(null)
+                viewModel.existingImageUrl = null
+                dialogState = CreatePostDialogState.CLOSED
+                onNavigateBack()
+            },
+            onChangesConfirm = {
+                dialogState = CreatePostDialogState.CLOSED
+                viewModel.updatePost(context) {
+                    onPostCreated()
+                }
+            },
+            onSuccessDismiss = {
+                dialogState = CreatePostDialogState.CLOSED
+                onPostCreated()
+            }
+        )
+    }
+}
+
+enum class CreatePostDialogState {
+    CLOSED,
+    CONFIRM_DISCARD,
+    CONFIRM_CHANGES,
+    SUCCESS_PUBLISHED
+}
+
+@Composable
+fun CreatePostDialog(
+    state: CreatePostDialogState,
+    onDismiss: () -> Unit,
+    onDiscardConfirm: () -> Unit,
+    onChangesConfirm: () -> Unit,
+    onSuccessDismiss: () -> Unit
+) {
+    if (state == CreatePostDialogState.CLOSED) return
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F6F9)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                when (state) {
+                    CreatePostDialogState.CONFIRM_DISCARD -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp, horizontal = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "¿Descartar publicación?",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.Black,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Al salir no se guardarán los cambios",
+                                fontSize = 13.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp)
+                        DialogActionRow(
+                            text = "Descartar",
+                            textColor = Color(0xFFC62828),
+                            onClick = onDiscardConfirm
+                        )
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp)
+                        DialogActionRow(
+                            text = "Cancelar",
+                            textColor = Color.Black,
+                            onClick = onDismiss
+                        )
+                    }
+                    CreatePostDialogState.CONFIRM_CHANGES -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp, horizontal = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Confirmar cambios",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.Black,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Al guardar, los cambios serán permanentes y no se podrán deshacer.",
+                                fontSize = 13.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp)
+                        DialogActionRow(
+                            text = "Confirmar",
+                            textColor = Color.Black,
+                            onClick = onChangesConfirm
+                        )
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp)
+                        DialogActionRow(
+                            text = "Cancelar",
+                            textColor = Color.Black,
+                            onClick = onDismiss
+                        )
+                    }
+                    CreatePostDialogState.SUCCESS_PUBLISHED -> {
+                        LaunchedEffect(Unit) {
+                            kotlinx.coroutines.delay(1500)
+                            onSuccessDismiss()
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Publicado con éxito",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+                    CreatePostDialogState.CLOSED -> {}
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DialogActionRow(
+    text: String,
+    textColor: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontWeight = FontWeight.Medium,
+            fontSize = 16.sp
+        )
     }
 }

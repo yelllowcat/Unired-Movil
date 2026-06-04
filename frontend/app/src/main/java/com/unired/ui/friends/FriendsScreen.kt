@@ -170,7 +170,8 @@ fun FriendsScreen(
                                         requests = viewModel.incomingRequests,
                                         isIncoming = true,
                                         onAccept = { viewModel.acceptRequest(it) },
-                                        onReject = { viewModel.rejectRequest(it) }
+                                        onReject = { viewModel.rejectRequest(it) },
+                                        onNavigateToProfile = onNavigateToProfile
                                     )
                                 }
                                 FriendsTab.ENVIAR_SOLICITUD -> {
@@ -190,7 +191,8 @@ fun FriendsScreen(
                                         isIncoming = false,
                                         onAccept = {},
                                         onReject = {},
-                                        onCancel = { viewModel.cancelRequest(it) }
+                                        onCancel = { viewModel.cancelRequest(it) },
+                                        onNavigateToProfile = onNavigateToProfile
                                     )
                                 }
                             }
@@ -208,7 +210,8 @@ fun RequestsList(
     isIncoming: Boolean,
     onAccept: (requestId: Int) -> Unit,
     onReject: (requestId: Int) -> Unit,
-    onCancel: (requestId: Int) -> Unit = {}
+    onCancel: (requestId: Int) -> Unit = {},
+    onNavigateToProfile: (Int) -> Unit
 ) {
     if (requests.isEmpty()) {
         Box(
@@ -231,11 +234,13 @@ fun RequestsList(
                 val name = request.senderName ?: "Usuario"
                 val picture = request.senderPicture
                 val date = DateFormatter.formatDateString(request.requestDate)
+                val targetUserId = if (isIncoming) request.senderId else request.receiverId
 
                 CardItem(
                     name = name,
                     picture = picture,
                     date = date,
+                    onItemClick = { onNavigateToProfile(targetUserId) },
                     buttons = {
                         if (isIncoming) {
                             Row(
@@ -319,6 +324,7 @@ fun SearchResultsList(
                     name = user.fullName,
                     picture = user.profilePicture,
                     date = date,
+                    onItemClick = { onNavigateToProfile(user.userId) },
                     buttons = {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -448,6 +454,7 @@ fun CardItem(
     name: String,
     picture: String?,
     date: String,
+    onItemClick: (() -> Unit)? = null,
     buttons: @Composable () -> Unit
 ) {
     Card(
@@ -468,7 +475,10 @@ fun CardItem(
                 imageUrl = picture,
                 fullName = name,
                 modifier = Modifier
-                    .size(width = 120.dp, height = 75.dp),
+                    .size(width = 120.dp, height = 75.dp)
+                    .then(
+                        if (onItemClick != null) Modifier.clickable { onItemClick() } else Modifier
+                    ),
                 shape = RoundedCornerShape(12.dp)
             )
 
@@ -481,7 +491,8 @@ fun CardItem(
                     text = name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = Color.Black,
+                    modifier = if (onItemClick != null) Modifier.clickable { onItemClick() } else Modifier
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(

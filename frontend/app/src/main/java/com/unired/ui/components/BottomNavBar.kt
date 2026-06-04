@@ -42,7 +42,11 @@ fun UniRedBottomBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEach { item ->
-                val isSelected = currentRoute == item.route
+                val isSelected = if (item.route == "profile/me") {
+                    currentRoute?.startsWith("profile") == true
+                } else {
+                    currentRoute == item.route
+                }
                 BottomNavTab(
                     item = item,
                     isSelected = isSelected,

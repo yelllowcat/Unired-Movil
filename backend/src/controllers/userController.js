@@ -36,7 +36,7 @@ const getPosts = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 20;
 
-  const posts = await userService.getUserPosts(userId, page, limit);
+  const posts = await userService.getUserPosts(userId, req.user.userId, page, limit);
   res.status(200).json({ success: true, data: posts });
 });
 

@@ -19,9 +19,13 @@ FROM node:20-alpine
 WORKDIR /usr/src/app
 
 COPY package*.json ./
+COPY prisma.config.ts ./
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/prisma ./prisma
 COPY --from=builder /usr/src/app/src ./src
+
+# Create uploads directory so multer can write files
+RUN mkdir -p /usr/src/app/uploads
 
 EXPOSE 3000
 

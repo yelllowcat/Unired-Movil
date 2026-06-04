@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +59,7 @@ fun PostDetailScreen(
     postId: Int,
     onNavigateToProfile: (Int) -> Unit,
     onBack: () -> Unit,
+    onNavigateToEditPost: (Int) -> Unit,
     viewModel: PostDetailViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -68,6 +70,8 @@ fun PostDetailScreen(
     )
 ) {
     val uiState = viewModel.uiState
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var optionsState by remember { mutableStateOf(PostOptionsState.CLOSED) }
     var commentText by remember { mutableStateOf(CommentDraftManager.getDraft(postId)) }
     var activeReplyingComment by remember { mutableStateOf<Comment?>(null) }
     var isImageViewerOpen by remember { mutableStateOf(false) }
@@ -160,8 +164,10 @@ fun PostDetailScreen(
                                 TextField(
                                     value = commentText,
                                     onValueChange = { 
-                                        commentText = it
-                                        CommentDraftManager.saveDraft(postId, it)
+                                        if (it.length <= 200) {
+                                            commentText = it
+                                            CommentDraftManager.saveDraft(postId, it)
+                                        }
                                     },
                                     placeholder = { Text(if (activeReplyingComment != null) "Responder" else "Comentar", color = Color.Gray) },
                                     modifier = Modifier
@@ -306,7 +312,8 @@ fun PostDetailScreen(
                                                 text = post.authorName,
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 15.sp,
-                                                color = Color.Black
+                                                color = Color.Black,
+                                                modifier = Modifier.clickable { onNavigateToProfile(post.userId) }
                                             )
                                             Text(
                                                 text = "Publicado el: " + DateFormatter.formatDateString(post.createdAt),
@@ -315,12 +322,15 @@ fun PostDetailScreen(
                                             )
                                         }
 
-                                        IconButton(onClick = {}) {
-                                            Icon(
-                                                imageVector = Icons.Default.Menu,
-                                                contentDescription = "Opciones",
-                                                tint = Color.Black
-                                            )
+                                        val currentUserId = remember { com.unired.util.SessionManager.getUserId() }
+                                        if (post.userId == currentUserId) {
+                                            IconButton(onClick = { optionsState = PostOptionsState.OPTIONS }) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Menu,
+                                                    contentDescription = "Opciones",
+                                                    tint = Color.Black
+                                                )
+                                            }
                                         }
                                     }
 
@@ -511,6 +521,7 @@ fun PostDetailScreen(
                                         onDeleteReplyClick = { reply ->
                                             viewModel.deleteReply(comment.commentId, reply.replyId)
                                         },
+                                        onProfileClick = onNavigateToProfile,
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                                     )
 
@@ -550,6 +561,34 @@ fun PostDetailScreen(
             }
         }
     }
+
+    PostOptionsDialog(
+        state = optionsState,
+        onDismiss = { optionsState = PostOptionsState.CLOSED },
+        onEditClick = {
+            optionsState = PostOptionsState.CLOSED
+            onNavigateToEditPost(postId)
+        },
+        onDeleteConfirmClick = {
+            if (optionsState == PostOptionsState.OPTIONS) {
+                optionsState = PostOptionsState.CONFIRM_DELETE
+            } else if (optionsState == PostOptionsState.CONFIRM_DELETE) {
+                viewModel.deletePost(
+                    onSuccess = {
+                        optionsState = PostOptionsState.SUCCESS_DELETE
+                    },
+                    onError = { errorMsg ->
+                        android.widget.Toast.makeText(context, errorMsg, android.widget.Toast.LENGTH_SHORT).show()
+                        optionsState = PostOptionsState.CLOSED
+                    }
+                )
+            }
+        },
+        onSuccessDismiss = {
+            optionsState = PostOptionsState.CLOSED
+            onBack()
+        }
+    )
 }
 
 object CommentDraftManager {
@@ -567,5 +606,126 @@ object CommentDraftManager {
 
     fun clearDraft(postId: Int) {
         drafts.remove(postId)
+    }
+}
+
+enum class PostOptionsState {
+    CLOSED,
+    OPTIONS,
+    CONFIRM_DELETE,
+    SUCCESS_DELETE
+}
+
+@Composable
+fun PostOptionsDialog(
+    state: PostOptionsState,
+    onDismiss: () -> Unit,
+    onEditClick: () -> Unit,
+    onDeleteConfirmClick: () -> Unit,
+    onSuccessDismiss: () -> Unit
+) {
+    if (state == PostOptionsState.CLOSED) return
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F6F9)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                when (state) {
+                    PostOptionsState.OPTIONS -> {
+                        DialogActionRow(
+                            text = "Eliminar",
+                            textColor = Color(0xFFC62828),
+                            onClick = onDeleteConfirmClick
+                        )
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp)
+                        DialogActionRow(
+                            text = "Editar",
+                            textColor = Color(0xFFC62828),
+                            onClick = onEditClick
+                        )
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp)
+                        DialogActionRow(
+                            text = "Cancelar",
+                            textColor = Color.Black,
+                            onClick = onDismiss
+                        )
+                    }
+                    PostOptionsState.CONFIRM_DELETE -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp, horizontal = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Confirmar eliminación",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.Black,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Al borrar la publicación no se podrá recuperar",
+                                fontSize = 13.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp)
+                        DialogActionRow(
+                            text = "Eliminar",
+                            textColor = Color(0xFFC62828),
+                            onClick = onDeleteConfirmClick
+                        )
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp)
+                        DialogActionRow(
+                            text = "Cancelar",
+                            textColor = Color.Black,
+                            onClick = onDismiss
+                        )
+                    }
+                    PostOptionsState.SUCCESS_DELETE -> {
+                        DialogActionRow(
+                            text = "Eliminado con éxito",
+                            textColor = Color.Black,
+                            onClick = onSuccessDismiss
+                        )
+                    }
+                    PostOptionsState.CLOSED -> {}
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DialogActionRow(
+    text: String,
+    textColor: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontWeight = FontWeight.Medium,
+            fontSize = 16.sp
+        )
     }
 }

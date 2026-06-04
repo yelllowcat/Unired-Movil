@@ -46,6 +46,13 @@ const getCommentsByPost = async (postId, currentUserId, page = 1, limit = 10) =>
 };
 
 const createComment = async (postId, userId, content) => {
+  if (!content || content.trim().length === 0) {
+    throw new ApiError(400, "El comentario no puede estar vacío");
+  }
+  if (content.length > 200) {
+    throw new ApiError(400, "El comentario no puede exceder los 200 caracteres");
+  }
+
   const post = await prisma.post.findUnique({
     where: { postId, active: true },
   });

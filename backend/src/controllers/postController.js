@@ -35,10 +35,10 @@ const updatePost = asyncHandler(async (req, res) => {
   const postId = parseInt(req.params.id, 10);
   if (isNaN(postId)) throw new ApiError(400, 'ID de publicación inválido');
 
-  const { content } = req.body;
+  const { content, removeImage } = req.body;
   if (!content) throw new ApiError(400, 'El contenido no puede estar vacío');
 
-  const post = await postService.updatePost(postId, req.user.userId, content);
+  const post = await postService.updatePost(postId, req.user.userId, content, removeImage);
   res.status(200).json({ success: true, data: post });
 });
 

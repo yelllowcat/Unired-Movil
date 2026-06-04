@@ -33,9 +33,11 @@ class RegisterViewModel(private val repository: AuthRepository = AuthRepository(
         private set
 
     fun onFullNameChange(newValue: String) {
-        fullName = newValue
-        if (fullNameError != null) fullNameError = null
-        if (errorMessage != null) errorMessage = null
+        if (newValue.length <= 50) {
+            fullName = newValue
+            if (fullNameError != null) fullNameError = null
+            if (errorMessage != null) errorMessage = null
+        }
     }
     fun onEmailChange(newValue: String) {
         email = newValue
@@ -55,13 +57,20 @@ class RegisterViewModel(private val repository: AuthRepository = AuthRepository(
 
     fun validate(): Boolean {
         var isValid = true
-        fullNameError = if (fullName.isBlank()) {
-            isValid = false; "El nombre completo es obligatorio"
-        } else null
+        val nameRegex = Regex("^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\\s]+$")
+        fullNameError = when {
+            fullName.isBlank() -> { isValid = false; "El nombre completo es obligatorio" }
+            fullName.length > 50 -> { isValid = false; "El nombre no puede exceder los 50 caracteres" }
+            !nameRegex.matches(fullName) -> { isValid = false; "El nombre solo puede contener letras y espacios" }
+            else -> null
+        }
         emailError = when {
             email.isBlank() -> { isValid = false; "El correo es obligatorio" }
             !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
                 isValid = false; "Formato de correo no válido"
+            }
+            !(email.trim().endsWith("@alu.uabcs.mx", ignoreCase = true) || email.trim().endsWith("@uabcs.mx", ignoreCase = true)) -> {
+                isValid = false; "Solo se permiten correos con dominio @alu.uabcs.mx y @uabcs.mx"
             }
             else -> null
         }

@@ -40,6 +40,13 @@ const getRepliesByComment = async (commentId, currentUserId) => {
 };
 
 const createReply = async (commentId, userId, content) => {
+  if (!content || content.trim().length === 0) {
+    throw new ApiError(400, "La respuesta no puede estar vacía");
+  }
+  if (content.length > 200) {
+    throw new ApiError(400, "La respuesta no puede exceder los 200 caracteres");
+  }
+
   const comment = await prisma.comment.findUnique({ where: { commentId, active: true } });
   if (!comment) throw new ApiError(404, 'Comentario no encontrado');
 

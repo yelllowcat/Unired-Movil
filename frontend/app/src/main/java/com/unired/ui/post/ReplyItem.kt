@@ -30,6 +30,7 @@ fun ReplyItem(
     reply: Reply,
     onLikeClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onProfileClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -58,7 +59,8 @@ fun ReplyItem(
                         text = reply.fullName,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
-                        color = Color.Black
+                        color = Color.Black,
+                        modifier = Modifier.clickable { onProfileClick(reply.userId) }
                     )
                     
                     Box {

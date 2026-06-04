@@ -474,4 +474,16 @@ class PostDetailViewModel(
             }
         }
     }
+
+    fun deletePost(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                postRepository.deletePost(postId)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e.message ?: "Ocurrió un error al eliminar la publicación")
+            }
+        }
+    }
 }
+

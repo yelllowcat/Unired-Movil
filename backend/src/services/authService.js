@@ -5,6 +5,22 @@ import ApiError from "../utils/ApiError.js";
 import env from "../config/env.js";
 
 const registerUser = async ({ fullName, email, password }) => {
+  const emailLower = email.toLowerCase().trim();
+  if (!emailLower.endsWith("@alu.uabcs.mx") && !emailLower.endsWith("@uabcs.mx")) {
+    throw new ApiError(400, "Solo se permiten correos con dominio @alu.uabcs.mx y @uabcs.mx");
+  }
+
+  if (!fullName || fullName.trim().length === 0) {
+    throw new ApiError(400, "El nombre completo es obligatorio");
+  }
+  if (fullName.length > 50) {
+    throw new ApiError(400, "El nombre no puede exceder los 50 caracteres");
+  }
+  const nameRegex = /^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/;
+  if (!nameRegex.test(fullName)) {
+    throw new ApiError(400, "El nombre solo puede contener letras y espacios");
+  }
+
   console.log('[registerUser] checking existing user...');
   const existingUser = await prisma.user.findUnique({ where: { email } });
   console.log('[registerUser] existingUser check done:', !!existingUser);
