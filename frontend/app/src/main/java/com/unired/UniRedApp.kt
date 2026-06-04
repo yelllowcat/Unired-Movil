@@ -48,9 +48,9 @@ fun UniRedApp() {
 
     val bottomItems = listOf(
         BottomNavItem("Feed", Screen.Feed.route, R.drawable.ic_feed),
+        BottomNavItem("Friends", Screen.Friends.route, R.drawable.ic_friends),
         BottomNavItem("newPost", Screen.CreatePost.route, R.drawable.ic_new_post),
         BottomNavItem("Notificaciones", Screen.Notifications.route, R.drawable.ic_notifications, unreadCount),
-        BottomNavItem("Friends", Screen.Friends.route, R.drawable.ic_friends),
         BottomNavItem("Profile", "profile/me", R.drawable.ic_profile)
     )
 
@@ -82,10 +82,15 @@ fun UniRedApp() {
         }
     }
 
-    // Reset badge count when the user navigates to the notifications screen
+    // Reset badge count when the user navigates to the notifications screen,
+    // and sync the unread count when navigating to other screens.
     LaunchedEffect(currentRoute) {
         if (currentRoute == Screen.Notifications.route) {
             unreadCount = 0
+        } else if (showBottomBar && SessionManager.isLoggedIn()) {
+            try {
+                unreadCount = notificationRepository.getUnreadCount()
+            } catch (_: Exception) {}
         }
     }
 

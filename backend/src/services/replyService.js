@@ -93,6 +93,10 @@ const deleteReply = async (replyId, userId) => {
     data: { active: false },
   });
 
+  await prisma.notification.deleteMany({
+    where: { replyId },
+  });
+
   return { success: true };
 };
 

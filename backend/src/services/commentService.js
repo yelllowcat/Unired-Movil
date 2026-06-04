@@ -105,6 +105,10 @@ const deleteComment = async (commentId, userId) => {
     data: { active: false },
   });
 
+  await prisma.notification.deleteMany({
+    where: { commentId },
+  });
+
   return { success: true };
 };
 

@@ -157,6 +157,10 @@ const deletePost = async (postId, userId) => {
     data: { active: false },
   });
 
+  await prisma.notification.deleteMany({
+    where: { postId },
+  });
+
   return { success: true };
 };
 

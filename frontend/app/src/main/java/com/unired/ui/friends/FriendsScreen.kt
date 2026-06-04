@@ -4,9 +4,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -116,8 +118,9 @@ fun FriendsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
                             .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         FriendsTab.values().forEach { tab ->
                             val isSelected = viewModel.currentTab == tab
@@ -125,6 +128,7 @@ fun FriendsScreen(
                                 FriendsTab.SOLICITUDES -> "Solicitudes"
                                 FriendsTab.ENVIAR_SOLICITUD -> "Enviar solicitud"
                                 FriendsTab.PENDIENTES -> "Solicitudes pendientes"
+                                FriendsTab.TODOS -> "Todos los amigos"
                             }
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -193,6 +197,18 @@ fun FriendsScreen(
                                         onReject = {},
                                         onCancel = { viewModel.cancelRequest(it) },
                                         onNavigateToProfile = onNavigateToProfile
+                                    )
+                                }
+                                FriendsTab.TODOS -> {
+                                    SearchResultsList(
+                                        users = viewModel.friendsList,
+                                        onNavigateToProfile = onNavigateToProfile,
+                                        onSendRequest = { viewModel.sendRequest(it) },
+                                        onAcceptRequest = { viewModel.acceptRequest(it) },
+                                        onRejectRequest = { viewModel.rejectRequest(it) },
+                                        onCancelRequest = { viewModel.cancelRequest(it) },
+                                        onRemoveFriend = { viewModel.removeFriend(it) },
+                                        emptyMessage = "No tienes amigos en tu lista"
                                     )
                                 }
                             }
@@ -298,7 +314,8 @@ fun SearchResultsList(
     onAcceptRequest: (requestId: Int) -> Unit,
     onRejectRequest: (requestId: Int) -> Unit,
     onCancelRequest: (requestId: Int) -> Unit,
-    onRemoveFriend: (userId: Int) -> Unit
+    onRemoveFriend: (userId: Int) -> Unit,
+    emptyMessage: String = "Busca usuarios por nombre"
 ) {
     if (users.isEmpty()) {
         Box(
@@ -306,7 +323,7 @@ fun SearchResultsList(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Busca usuarios por nombre",
+                text = emptyMessage,
                 color = Color.Gray,
                 fontSize = 15.sp
             )

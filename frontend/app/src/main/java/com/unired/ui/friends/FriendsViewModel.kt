@@ -15,7 +15,8 @@ import kotlinx.coroutines.launch
 enum class FriendsTab {
     SOLICITUDES,
     ENVIAR_SOLICITUD,
-    PENDIENTES
+    PENDIENTES,
+    TODOS
 }
 
 class FriendsViewModel(
@@ -48,6 +49,9 @@ class FriendsViewModel(
         private set
 
     var searchResults by mutableStateOf<List<UserPreview>>(emptyList())
+        private set
+
+    var friendsList by mutableStateOf<List<UserPreview>>(emptyList())
         private set
 
     init {
@@ -113,6 +117,9 @@ class FriendsViewModel(
                     FriendsTab.PENDIENTES -> {
                         sentRequests = friendRepository.getSentRequests()
                     }
+                    FriendsTab.TODOS -> {
+                        friendsList = friendRepository.getFriends()
+                    }
                 }
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Error al cargar información"
@@ -139,6 +146,9 @@ class FriendsViewModel(
                     }
                     FriendsTab.PENDIENTES -> {
                         sentRequests = friendRepository.getSentRequests()
+                    }
+                    FriendsTab.TODOS -> {
+                        friendsList = friendRepository.getFriends()
                     }
                 }
             } catch (e: Exception) {
